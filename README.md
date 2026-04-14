@@ -1,3 +1,4 @@
 # Proyecto_Herramientas
-Trabajo grupal
-rosita
+#Trabajo grupal
+#rosita
+#Tiempo estimado: 5 semanas

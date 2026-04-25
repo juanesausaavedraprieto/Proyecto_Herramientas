@@ -2,44 +2,50 @@
 import { create } from 'zustand';
 import type { Decision, Criterion, Option } from '../types';
 
+export interface Recommendation {
+    recommendedOption: Option;
+    finalScores: Record<string, number>;
+    justification: string;
+}
+
 interface DecisionState {
     currentDecision: Decision | null;
-
+    recommendation: Recommendation | null;
     // Acción que recibe la decisión desde el backend
     setDecision: (decision: Decision) => void;
-
-    addCriterion: (criterion: Omit<Criterion, 'id'>) => void;
-    addOption: (option: Omit<Option, 'id'>) => void;
+    setRecommendation: (rec: Recommendation) => void;
+    // Actualizado: ahora reciben el objeto completo (incluyendo el ID de PostgreSQL)
+    addCriterion: (criterion: Criterion) => void;
+    addOption: (option: Option) => void;
     updateScore: (optionId: string, criterionId: string, score: number) => void;
 }
 
 export const useDecisionStore = create<DecisionState>((set) => ({
     currentDecision: null,
+    recommendation: null,
 
     setDecision: (decision) => set({ currentDecision: decision }),
 
+    setRecommendation: (rec) => set({ recommendation: rec }),
+
     addCriterion: (criterion) => set((state) => {
         if (!state.currentDecision) return state;
+        // Ya no usamos crypto.randomUUID(). Confiamos en el ID que viene de PostgreSQL
         return {
             currentDecision: {
                 ...state.currentDecision,
-                criteria: [
-                    ...state.currentDecision.criteria,
-                    { ...criterion, id: crypto.randomUUID() }
-                ]
+                criteria: [...state.currentDecision.criteria, criterion as Criterion]
             }
         };
     }),
 
     addOption: (option) => set((state) => {
         if (!state.currentDecision) return state;
+        // Ya no usamos crypto.randomUUID().
         return {
             currentDecision: {
                 ...state.currentDecision,
-                options: [
-                    ...state.currentDecision.options,
-                    { ...option, id: crypto.randomUUID() }
-                ]
+                options: [...state.currentDecision.options, option as Option]
             }
         };
     }),

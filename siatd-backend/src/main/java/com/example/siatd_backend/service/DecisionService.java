@@ -57,13 +57,13 @@ public class DecisionService {
 
     // 3. NUEVO MÉTODO PARA OPCIONES
     @Transactional
-    public Option addOption(UUID decisionId, Option option) {
-        Decision decision = decisionRepository.findById(decisionId)
-                .orElseThrow(() -> new RuntimeException("Decisión no encontrada"));
+    public Option addOption(Long decisionId, Option option) {
+    Decision decision = decisionRepository.findById(decisionId)
+        .orElseThrow(() -> new RuntimeException("Decisión no encontrada"));
 
-        option.setDecision(decision);
-        return optionRepository.save(option);
-    }
+    option.setDecision(decision);
+    return optionRepository.save(option);
+}
 
     public List<Decision> getAllDecisions() {
         return decisionRepository.findAll();

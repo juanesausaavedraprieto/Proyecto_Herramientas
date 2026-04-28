@@ -1,5 +1,6 @@
 package com.example.siatd_backend.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -41,4 +42,9 @@ public class Decision {
     // Relación: Una decisión tiene muchas opciones
     @OneToMany(mappedBy = "decision", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Option> options = new ArrayList<>();
+    // En Decision.java
+    @ManyToOne
+    @JoinColumn(name = "user_id", nullable = false)
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // El usuario no se envía desde el front, solo se manda de vuelta al front
+    private User user;
 }

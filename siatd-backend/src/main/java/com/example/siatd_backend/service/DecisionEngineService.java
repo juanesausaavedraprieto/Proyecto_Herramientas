@@ -2,6 +2,7 @@ package com.example.siatd_backend.service;
 
 import com.example.siatd_backend.dto.MatrixRequest;
 import com.example.siatd_backend.dto.RecommendationResponse;
+import com.example.siatd_backend.exception.ResourceNotFoundException;
 import com.example.siatd_backend.model.Criterion;
 import com.example.siatd_backend.model.Decision;
 import com.example.siatd_backend.model.DecisionStatus;
@@ -26,7 +27,7 @@ public class DecisionEngineService {
     @Transactional
     public RecommendationResponse calculateBestOption(UUID decisionId, MatrixRequest matrix) {
         Decision decision = decisionRepository.findById(decisionId)
-                .orElseThrow(() -> new RuntimeException("Decisión no encontrada"));
+                .orElseThrow(() -> new ResourceNotFoundException("La decisión con el ID especificado no existe en la base de datos."));
 
         Map<Option, Double> finalScores = new HashMap<>();
 

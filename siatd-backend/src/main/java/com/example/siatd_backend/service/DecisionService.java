@@ -1,5 +1,6 @@
 package com.example.siatd_backend.service;
 
+import com.example.siatd_backend.exception.ResourceNotFoundException;
 import com.example.siatd_backend.model.Criterion;
 import com.example.siatd_backend.model.Decision;
 import com.example.siatd_backend.model.Option;
@@ -45,7 +46,7 @@ public class DecisionService {
     public Criterion addCriterion(UUID decisionId, Criterion criterion) {
         // 1. Buscamos la decisión en la BD
         Decision decision = decisionRepository.findById(decisionId)
-                .orElseThrow(() -> new RuntimeException("Decisión no encontrada"));
+                .orElseThrow(() -> new ResourceNotFoundException("La decisión con el ID especificado no existe en la base de datos."));
 
         // 2. Vinculamos el criterio a la decisión
         criterion.setDecision(decision);

@@ -28,16 +28,20 @@ export const Login = () => {
                 email: data.email,
                 password: data.password
             });
-
-            // 1. Extraemos el token del JSON que manda Spring Boot
-            const token = response.data.token;
+            console.log("📦 Datos recibidos del server:", response.data);
+            // Extraemos token y nombre desde el backend
+            const { token, name } = response.data;
 
             if (token) {
-                // 2. LO GUARDAMOS (Esto es lo que te falta)
+                // Guardar token
                 localStorage.setItem('token', token);
                 console.log("✅ Token guardado correctamente");
 
-                // 3. Redirigimos al Dashboard
+                // 👇 Guardar nombre del usuario
+                localStorage.setItem('userName', name || 'Usuario');
+                console.log("✅ Nombre guardado:", name);
+
+                // Redirigir al Dashboard
                 navigate('/');
             }
         } catch (err) {
@@ -45,7 +49,6 @@ export const Login = () => {
             alert("Credenciales inválidas. Usa cliente@siatd.com / Cliente123*");
         }
     };
-
     return (
         <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
             <div className="max-w-md w-full bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">

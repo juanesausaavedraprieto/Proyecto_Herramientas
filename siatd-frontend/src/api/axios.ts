@@ -5,13 +5,17 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
+    // Si la URL incluye '/auth/', no buscamos token ni avisamos nada
+    if (config.url?.includes('/auth/')) {
+        return config;
+    }
+
     const token = localStorage.getItem('token');
     if (token) {
-        // IMPORTANTE: El espacio después de 'Bearer ' es obligatorio
         config.headers.Authorization = `Bearer ${token}`;
-        console.log("🚀 Enviando Token:", token.substring(0, 10) + "...");
     } else {
-        console.warn("⚠️ No se encontró token en LocalStorage");
+        // Solo avisar si NO es una ruta de auth y no hay token
+        console.warn("⚠️ No se encontró token para una ruta protegida");
     }
     return config;
 });

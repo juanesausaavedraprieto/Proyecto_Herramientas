@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.example.siatd_backend.service;
 
 import com.example.siatd_backend.dto.AuthenticationResponse;
@@ -19,10 +15,8 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 
-;
-
 @Service
-@RequiredArgsConstructor // Esto genera el constructor para las inyecciones automáticas
+@RequiredArgsConstructor
 public class AuthenticationService {
 
     private final UserRepository userRepository;
@@ -30,9 +24,11 @@ public class AuthenticationService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
 
-    // --- MÉTODO DE REGISTRO (Con tus validaciones) ---
+    /**
+     * Registra un nuevo usuario y devuelve su primer Token + Nombre.
+     */
     public AuthenticationResponse register(RegisterRequest request) {
-        // Validación de edad (Mínimo 15 años)
+        // Validación de edad profesional
         if (request.getBirthDate().plusYears(15).isAfter(LocalDate.now())) {
             throw new RuntimeException("Debes tener al menos 15 años para registrarte.");
         }
@@ -47,12 +43,19 @@ public class AuthenticationService {
 
         userRepository.save(user);
         var jwtToken = jwtService.generateToken(user);
-        return new AuthenticationResponse(jwtToken);
+
+        // Retornamos el objeto con el nombre incluido
+        return AuthenticationResponse.builder()
+                .token(jwtToken)
+                .name(user.getName())
+                .build();
     }
 
-    // --- EL MÉTODO QUE CONSULTASTE (Login) ---
+    /**
+     * Autentica al usuario y devuelve el Token + Nombre para el Sidebar.
+     */
     public AuthenticationResponse authenticate(LoginRequest request) {
-        // 1. Cambiamos email() por getEmail() y password() por getPassword()
+        // 1. Verificación de credenciales con Spring Security
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.getEmail(),
@@ -60,11 +63,17 @@ public class AuthenticationService {
                 )
         );
 
-        // 2. Aquí también usamos getEmail()
+        // 2. Si la línea anterior falla, lanza una excepción automáticamente.
+        // Si llega aquí, es porque el login es correcto.
         var user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado tras autenticación"));
+                .orElseThrow(() -> new RuntimeException("Error crítico: Usuario no encontrado tras autenticación."));
 
         var jwtToken = jwtService.generateToken(user);
-        return new AuthenticationResponse(jwtToken);
+
+        // 3. Construimos la respuesta con el nombre para que el Front la guarde
+        return AuthenticationResponse.builder()
+                .token(jwtToken)
+                .name(user.getName()) // 👈 ESTA ES LA MAGIA
+                .build();
     }
 }

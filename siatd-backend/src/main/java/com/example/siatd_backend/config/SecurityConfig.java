@@ -38,7 +38,7 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
         .csrf(AbstractHttpConfigurer::disable)
         .authorizeHttpRequests(auth -> auth
             .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
-            .requestMatchers("/api/auth/**").permitAll() // Público
+            .requestMatchers("/api/auth/**", "/v3/api-docs/**", "/swagger-ui/**").permitAll() // Público
             .anyRequest().authenticated() // Privado
         )
         .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

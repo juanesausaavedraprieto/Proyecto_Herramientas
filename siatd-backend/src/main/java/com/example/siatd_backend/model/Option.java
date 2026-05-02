@@ -1,6 +1,6 @@
 package com.example.siatd_backend.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -24,6 +24,6 @@ public class Option {
     // Relación: Muchas opciones pertenecen a una decisión
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "decision_id", nullable = false)
-    @JsonIgnore
+    @JsonBackReference
     private Decision decision;
 }

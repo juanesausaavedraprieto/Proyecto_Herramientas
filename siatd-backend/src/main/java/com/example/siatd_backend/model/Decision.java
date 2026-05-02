@@ -1,5 +1,6 @@
 package com.example.siatd_backend.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -24,7 +25,6 @@ public class Decision {
     @Column(nullable = false, length = 200)
     private String title;
 
-    // Aquí volvemos al Enum, guardándolo como texto en PostgreSQL
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private DecisionStatus status = DecisionStatus.DRAFT;
@@ -36,15 +36,27 @@ public class Decision {
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
     }
+
+    // --- RELACIONES CON MANEJO DE RECURSIÓN ---
+
+    @JsonManagedReference // 👈 Indica que Decision "manda" en la serialización de Criteria
     @OneToMany(mappedBy = "decision", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Criterion> criteria = new ArrayList<>();
 
-    // Relación: Una decisión tiene muchas opciones
+    @JsonManagedReference // 👈 Indica que Decision "manda" en la serialización de Options
     @OneToMany(mappedBy = "decision", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Option> options = new ArrayList<>();
-    // En Decision.java
+
+    // ------------------------------------------
+
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) // El usuario no se envía desde el front, solo se manda de vuelta al front
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) 
     private User user;
+
+    @Column(name = "stress_level")
+    private Integer stressLevel = 1;
+
+    @Column(name = "urgency_score")
+    private Integer urgencyScore = 1;
 }

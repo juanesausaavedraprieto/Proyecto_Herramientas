@@ -10,6 +10,8 @@ import { Login } from './features/auth/Login';
 import { Register } from './features/auth/Register';
 import { Dashboard } from './features/dashboard/Dashboard';
 import { History } from './features/history/History';
+import { Settings } from './features/settings/Settings';
+import { Profile } from './features/profile/Profile';
 
 function App() {
   return (
@@ -29,10 +31,11 @@ function App() {
           <Route path="results" element={<Results />} />
 
           {/* NUEVAS RUTAS para arreglar las advertencias de la consola */}
-          <Route path="results/:id" element={<div className="p-8 text-xl font-bold">Cargando resultados pasados... (En construcción)</div>} />
+          <Route path="results/:id" element={<Results />}/>
           <Route path="continue/:id" element={<div className="p-8 text-xl font-bold">Continuando decisión... (En construcción)</div>} />
           <Route path="history" element={<History />} />
-          <Route path="settings" element={<div className="p-8 text-xl font-bold">Configuración de Usuario (En construcción)</div>} />
+          <Route path="settings" element={<Settings />} />
+          <Route path="profile" element={<Profile />} />
         </Route>
       </Routes>
     </BrowserRouter>

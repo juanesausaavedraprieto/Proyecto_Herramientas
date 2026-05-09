@@ -6,6 +6,7 @@ import { DefineCriteria } from './features/decision-maker/DefineCriteria';
 import { DefineOptions } from './features/decision-maker/DefineOptions';
 import { EvaluationMatrix } from './features/decision-maker/EvaluationMatrix';
 import { Results } from './features/decision-maker/Results';
+import { ContinueDecision } from './features/decision-maker/ContinueDecision';
 import { Login } from './features/auth/Login';
 import { Register } from './features/auth/Register';
 import { Dashboard } from './features/dashboard/Dashboard';
@@ -32,7 +33,7 @@ function App() {
 
           {/* NUEVAS RUTAS para arreglar las advertencias de la consola */}
           <Route path="results/:id" element={<Results />}/>
-          <Route path="continue/:id" element={<div className="p-8 text-xl font-bold">Continuando decisión... (En construcción)</div>} />
+          <Route path="continue/:id" element={<ContinueDecision />} />
           <Route path="history" element={<History />} />
           <Route path="settings" element={<Settings />} />
           <Route path="profile" element={<Profile />} />

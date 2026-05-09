@@ -16,16 +16,13 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor // Genera el constructor con los parámetros final automáticamente
+@RequiredArgsConstructor
 public class DecisionService {
 
     private final DecisionRepository decisionRepository;
     private final CriterionRepository criterionRepository;
     private final OptionRepository optionRepository;
 
-    /**
-     * Guarda una decisión completa (incluyendo criterios y opciones si vienen en el JSON).
-     */
     @Transactional
     public Decision createDecision(Decision decision) {
         if (decision.getCriteria() != null) {
@@ -37,9 +34,12 @@ public class DecisionService {
         return decisionRepository.save(decision);
     }
 
-    /**
-     * Agrega un criterio a una decisión existente.
-     */
+    // 🚨 NUEVO MÉTODO PARA ACTUALIZAR LA DECISIÓN (Guarda la Matriz JSON) 🚨
+    @Transactional
+    public Decision updateDecision(Decision decision) {
+        return decisionRepository.save(decision);
+    }
+
     @Transactional
     public Criterion addCriterion(UUID decisionId, Criterion criterion) {
         Decision decision = decisionRepository.findById(decisionId)
@@ -49,9 +49,6 @@ public class DecisionService {
         return criterionRepository.save(criterion);
     }
 
-    /**
-     * Agrega una opción a una decisión existente.
-     */
     @Transactional
     public Option addOption(UUID decisionId, Option option) {
         Decision decision = decisionRepository.findById(decisionId)
@@ -61,26 +58,16 @@ public class DecisionService {
         return optionRepository.save(option);
     }
 
-    /**
-     * Recupera el historial filtrado por el email del usuario logueado.
-     */
     @Transactional(readOnly = true)
     public List<Decision> getAllDecisionsForUser(String email) {
-        // Importante: El método en el Repository debe ser findByUser_Email
         return decisionRepository.findByUser_Email(email);
     }
 
-    /**
-     * Busca una decisión específica por su ID.
-     */
     @Transactional(readOnly = true)
     public Optional<Decision> getDecisionById(UUID id) {
         return decisionRepository.findById(id);
     }
 
-    /**
-     * Método opcional para eliminar (por si te lo piden en la ronda de preguntas).
-     */
     @Transactional
     public void deleteDecision(UUID id) {
         if (!decisionRepository.existsById(id)) {

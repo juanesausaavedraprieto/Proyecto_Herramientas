@@ -16,10 +16,16 @@ export interface Option {
 }
 
 export interface Decision {
-    id: string;
+    id?: string;
     title: string;
-    status: DecisionStatus;
     criteria: Criterion[];
     options: Option[];
-    recommendedOptionId?: string; // Se llena cuando el motor calcula la mejor opción
+
+    // 👇 AÑADE ESTOS NUEVOS CAMPOS AQUÍ 👇
+    stressLevel?: number;
+    urgencyScore?: number;
+    evaluationMatrix?: Record<string, Record<string, number>>;
+    recommendedOption?: any;
+    justification?: string;
+    finalScores?: Record<string, number>;
 }

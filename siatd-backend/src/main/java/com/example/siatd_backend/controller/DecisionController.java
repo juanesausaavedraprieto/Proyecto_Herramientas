@@ -19,7 +19,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/decisions")
-@CrossOrigin(origins = "http://localhost:5173") 
+@CrossOrigin(origins = "http://localhost:5173")
 public class DecisionController {
 
     private final DecisionService decisionService;
@@ -27,8 +27,8 @@ public class DecisionController {
     private final UserRepository userRepository;
 
     public DecisionController(
-            DecisionService decisionService, 
-            DecisionEngineService decisionEngineService, 
+            DecisionService decisionService,
+            DecisionEngineService decisionEngineService,
             UserRepository userRepository) {
         this.decisionService = decisionService;
         this.decisionEngineService = decisionEngineService;
@@ -65,7 +65,7 @@ public class DecisionController {
             decision.setUser(user);
             Decision savedDecision = decisionService.createDecision(decision);
             return new ResponseEntity<>(savedDecision, HttpStatus.CREATED);
-            
+
         } catch (Exception e) {
             System.err.println("Error al crear decisión: " + e.getMessage());
             return ResponseEntity.internalServerError().build();
@@ -81,12 +81,29 @@ public class DecisionController {
         return new ResponseEntity<>(savedOption, HttpStatus.CREATED);
     }
 
+    // En tu DecisionController.java
     @PostMapping("/{decisionId}/calculate")
     public ResponseEntity<RecommendationResponse> calculateDecision(
             @PathVariable UUID decisionId,
             @RequestBody MatrixRequest matrixRequest) {
 
+        // 1. Calculamos la mejor opción con el Motor TOPSIS
         RecommendationResponse result = decisionEngineService.calculateBestOption(decisionId, matrixRequest);
+
+        // 2. Buscamos la decisión en la Base de Datos
+        Decision decision = decisionService.getDecisionById(decisionId)
+                .orElseThrow(() -> new RuntimeException("Decisión no encontrada"));
+
+        // 3. 🚨 GUARDAMOS ABSOLUTAMENTE TODO EN LA BASE DE DATOS 🚨
+        decision.setEvaluationMatrix(convertMapKeysToStrings(matrixRequest.getScores()));
+        decision.setRecommendedOption(result.getRecommendedOption());
+        decision.setJustification(result.getJustification());
+        decision.setFinalScores(result.getFinalScores());
+
+        // 4. Actualizamos la BD
+        decisionService.updateDecision(decision);
+
+        // 5. Retornamos la respuesta al Frontend
         return ResponseEntity.ok(result);
     }
 
@@ -104,5 +121,24 @@ public class DecisionController {
 
         Criterion savedCriterion = decisionService.addCriterion(decisionId, criterion);
         return new ResponseEntity<>(savedCriterion, HttpStatus.CREATED);
+    }
+
+    private java.util.Map<String, java.util.Map<String, Double>> convertMapKeysToStrings(
+            java.util.Map<UUID, java.util.Map<UUID, Double>> originalMap) {
+
+        java.util.Map<String, java.util.Map<String, Double>> newMap = new java.util.HashMap<>();
+
+        if (originalMap == null) {
+            return newMap;
+        }
+
+        for (java.util.Map.Entry<UUID, java.util.Map<UUID, Double>> entry : originalMap.entrySet()) {
+            java.util.Map<String, Double> innerMap = new java.util.HashMap<>();
+            for (java.util.Map.Entry<UUID, Double> innerEntry : entry.getValue().entrySet()) {
+                innerMap.put(innerEntry.getKey().toString(), innerEntry.getValue());
+            }
+            newMap.put(entry.getKey().toString(), innerMap);
+        }
+        return newMap;
     }
 }

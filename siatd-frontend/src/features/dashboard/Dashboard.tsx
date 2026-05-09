@@ -1,4 +1,3 @@
-// src/features/dashboard/Dashboard.tsx
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../api/axios';
@@ -10,12 +9,10 @@ export const Dashboard = () => {
     const [decisions, setDecisions] = useState<Decision[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    // Cargar las decisiones al montar el componente
     useEffect(() => {
         const token = localStorage.getItem('token');
-
         if (!token) {
-            navigate('/login'); // Redirige si no hay token
+            navigate('/login');
             return;
         }
 
@@ -33,8 +30,9 @@ export const Dashboard = () => {
         fetchDecisions();
     }, []);
 
-    const completedDecisions = decisions.filter(d => d.status === 'COMPLETED');
-    const draftDecisions = decisions.filter(d => d.status === 'DRAFT');
+    // 🚨 CORRECCIÓN: Ahora verificamos si existe "recommendedOption"
+    const completedDecisions = decisions.filter(d => d.status === 'COMPLETED' || !!d.recommendedOption);
+    const draftDecisions = decisions.filter(d => d.status !== 'COMPLETED' && !d.recommendedOption);
 
     return (
         <div className="max-w-6xl mx-auto mt-6">
@@ -103,26 +101,30 @@ export const Dashboard = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {decisions.slice().reverse().map((decision) => (
-                                    <tr key={decision.id} className="border-b border-gray-50 hover:bg-slate-50 transition-colors">
-                                        <td className="p-4 font-medium text-slate-800">{decision.title}</td>
-                                        <td className="p-4">
-                                            <span className={`px-3 py-1 text-xs font-semibold rounded-full ${decision.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-                                                }`}>
-                                                {decision.status === 'COMPLETED' ? 'Resuelto' : 'En proceso'}
-                                            </span>
-                                        </td>
-                                        <td className="p-4 text-slate-500 text-sm">{decision.options?.length || 0} alternativas</td>
-                                        <td className="p-4 text-right">
-                                            <button
-                                                onClick={() => navigate(decision.status === 'COMPLETED' ? `/results/${decision.id}` : `/continue/${decision.id}`)}
-                                                className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-800"
-                                            >
-                                                {decision.status === 'COMPLETED' ? 'Ver Análisis' : 'Continuar'} <ArrowRight className="w-4 h-4" />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
+                                {decisions.slice().reverse().map((decision) => {
+                                    // 🚨 Lógica inteligente para saber si está completada
+                                    const isCompleted = decision.status === 'COMPLETED' || !!decision.recommendedOption;
+
+                                    return (
+                                        <tr key={decision.id} className="border-b border-gray-50 hover:bg-slate-50 transition-colors">
+                                            <td className="p-4 font-medium text-slate-800">{decision.title}</td>
+                                            <td className="p-4">
+                                                <span className={`px-3 py-1 text-xs font-semibold rounded-full ${isCompleted ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                                                    {isCompleted ? 'Resuelto' : 'En proceso'}
+                                                </span>
+                                            </td>
+                                            <td className="p-4 text-slate-500 text-sm">{decision.options?.length || 0} alternativas</td>
+                                            <td className="p-4 text-right">
+                                                <button
+                                                    onClick={() => navigate(isCompleted ? `/results/${decision.id}` : `/continue/${decision.id}`)}
+                                                    className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-800"
+                                                >
+                                                    {isCompleted ? 'Ver Análisis' : 'Continuar'} <ArrowRight className="w-4 h-4" />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>

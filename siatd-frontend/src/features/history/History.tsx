@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api/axios';
-import type{ Decision } from '../../types';
-import { Calendar, ChevronRight, Search, Filter, Trash2 } from 'lucide-react';
+import type { Decision } from '../../types';
+import { Calendar, ChevronRight, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export const History = () => {
@@ -42,37 +42,41 @@ export const History = () => {
                 <div className="flex justify-center p-20 animate-pulse text-slate-400">Cargando tu historia...</div>
             ) : (
                 <div className="grid gap-4">
-                    {decisions.slice().reverse().map((d) => (
-                        <div
-                            key={d.id}
-                            onClick={() => navigate(d.status === 'COMPLETED' ? `/results/${d.id}` : `/continue/${d.id}`)}
-                            className="group bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all cursor-pointer flex items-center justify-between"
-                        >
-                            <div className="flex items-center gap-5">
-                                <div className={`p-3 rounded-xl ${d.status === 'COMPLETED' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
-                                    <Calendar className="w-6 h-6" />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-slate-800 group-hover:text-blue-600 transition-colors">{d.title}</h3>
-                                    <div className="flex items-center gap-3 mt-1 text-xs text-slate-400 font-medium">
-                                        <span>{new Date(d.createdAt!).toLocaleDateString()}</span>
-                                        <span className="w-1 h-1 bg-slate-200 rounded-full"></span>
-                                        <span>{d.criteria.length} Criterios</span>
-                                        <span className="w-1 h-1 bg-slate-200 rounded-full"></span>
-                                        <span>{d.options.length} Opciones</span>
+                    {decisions.slice().reverse().map((d) => {
+                        // 🚨 Lógica inteligente para saber si está completada
+                        const isCompleted = d.status === 'COMPLETED' || !!d.recommendedOption;
+
+                        return (
+                            <div
+                                key={d.id}
+                                onClick={() => navigate(isCompleted ? `/results/${d.id}` : `/continue/${d.id}`)}
+                                className="group bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-blue-200 transition-all cursor-pointer flex items-center justify-between"
+                            >
+                                <div className="flex items-center gap-5">
+                                    <div className={`p-3 rounded-xl ${isCompleted ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                                        <Calendar className="w-6 h-6" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-slate-800 group-hover:text-blue-600 transition-colors">{d.title}</h3>
+                                        <div className="flex items-center gap-3 mt-1 text-xs text-slate-400 font-medium">
+                                            <span>{new Date(d.createdAt!).toLocaleDateString()}</span>
+                                            <span className="w-1 h-1 bg-slate-200 rounded-full"></span>
+                                            <span>{d.criteria?.length || 0} Criterios</span>
+                                            <span className="w-1 h-1 bg-slate-200 rounded-full"></span>
+                                            <span>{d.options?.length || 0} Opciones</span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <div className="flex items-center gap-4">
-                                <span className={`text-[10px] uppercase tracking-widest font-bold px-3 py-1 rounded-full ${d.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-                                    }`}>
-                                    {d.status === 'COMPLETED' ? 'Finalizado' : 'Borrador'}
-                                </span>
-                                <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" />
+                                <div className="flex items-center gap-4">
+                                    <span className={`text-[10px] uppercase tracking-widest font-bold px-3 py-1 rounded-full ${isCompleted ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                                        {isCompleted ? 'Finalizado' : 'Borrador'}
+                                    </span>
+                                    <ChevronRight className="w-5 h-5 text-slate-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" />
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
         </div>

@@ -1,21 +1,33 @@
 import axios from 'axios';
 
 export const api = axios.create({
-    baseURL: 'http://localhost:8080/api',
+    baseURL: 'http://localhost:8080/api', // Asegúrate de que esta sea tu URL
 });
 
-api.interceptors.request.use((config) => {
-    // Si la URL incluye '/auth/', no buscamos token ni avisamos nada
-    if (config.url?.includes('/auth/')) {
+// 🚨 EL INTERCEPTOR: Se ejecuta mágicamente antes de cada petición
+api.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
         return config;
+    },
+    (error) => {
+        return Promise.reject(error);
     }
+);
 
-    const token = localStorage.getItem('token');
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    } else {
-        // Solo avisar si NO es una ruta de auth y no hay token
-        console.warn("⚠️ No se encontró token para una ruta protegida");
+// Opcional: Interceptor de respuesta para cerrar sesión si el token expira (Error 401/403)
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+            // Si el token expiró, limpiamos y mandamos al login
+            localStorage.removeItem('token');
+            localStorage.removeItem('userRole');
+            window.location.href = '/login';
+        }
+        return Promise.reject(error);
     }
-    return config;
-});
+);

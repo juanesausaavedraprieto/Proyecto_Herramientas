@@ -8,6 +8,11 @@ import { EvaluationMatrix } from './features/decision-maker/EvaluationMatrix';
 import { Results } from './features/decision-maker/Results';
 import { ContinueDecision } from './features/decision-maker/ContinueDecision';
 import { Login } from './features/auth/Login';
+import { ProtectedRoute } from './components/layout/ProtectedRoute';
+import { NotFound } from './features/errors/NotFound';
+import { GuestRoute } from './components/layout/GuestRoute';
+import { AdminRoute } from './components/layout/AdminRoute';
+import { UserManagement } from './features/admin/UserManagement';
 import { Register } from './features/auth/Register';
 import { Dashboard } from './features/dashboard/Dashboard';
 import { History } from './features/history/History';
@@ -18,8 +23,11 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register/>}/>
+        <Route element={<GuestRoute />}>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+        </Route>
+        <Route element={<ProtectedRoute />}>
 
         <Route path="/" element={<MainLayout />}>
           <Route index element={<Dashboard />} />
@@ -37,8 +45,15 @@ function App() {
           <Route path="history" element={<History />} />
           <Route path="settings" element={<Settings />} />
           <Route path="profile" element={<Profile />} />
+          </Route>
         </Route>
+        <Route element={<AdminRoute />}>
+          <Route path="admin/users" element={<UserManagement />} />
+          {/* Aquí irán más rutas de admin si las necesitas */}
+        </Route>
+        <Route path="*" element={<NotFound />} />
       </Routes>
+      
     </BrowserRouter>
   );
 }

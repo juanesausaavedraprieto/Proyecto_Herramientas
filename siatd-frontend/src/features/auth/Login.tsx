@@ -29,26 +29,28 @@ export const Login = () => {
                 password: data.password
             });
             console.log("📦 Datos recibidos del server:", response.data);
-            // Extraemos token y nombre desde el backend
-            const { token, name } = response.data;
+
+            // 🚨 EXTRAEMOS TODOS LOS DATOS QUE AHORA ENVÍA EL BACKEND
+            const { token, name, email, role } = response.data;
 
             if (token) {
-                // Guardar token
+                // Guardar token y datos del usuario en localStorage
                 localStorage.setItem('token', token);
-                console.log("✅ Token guardado correctamente");
-
-                // 👇 Guardar nombre del usuario
                 localStorage.setItem('userName', name || 'Usuario');
-                console.log("✅ Nombre guardado:", name);
+                localStorage.setItem('userEmail', email || data.email);
+                localStorage.setItem('userRole', role || 'USER');
+
+                console.log("✅ Datos de sesión guardados correctamente");
 
                 // Redirigir al Dashboard
                 navigate('/');
             }
         } catch (err) {
             console.error("Error en login:", err);
-            alert("Credenciales inválidas. Usa cliente@siatd.com / Cliente123*");
+            alert("Credenciales inválidas. Verifica tu correo y contraseña.");
         }
     };
+
     return (
         <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
             <div className="max-w-md w-full bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">

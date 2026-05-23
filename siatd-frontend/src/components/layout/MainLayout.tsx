@@ -6,38 +6,45 @@ import {
     Settings,
     LayoutDashboard,
     LogOut,
-    User as UserIcon, // Usamos UserIcon para la navegación de Perfil
+    User as UserIcon,
     ChevronUp,
+    Users, // 👈 Importamos el nuevo icono
 } from 'lucide-react';
 
 export const MainLayout = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const [isProfileOpen, setIsProfileOpen] = useState(false);
-    const [userName, setUserName] = useState('Usuario');
 
-    // Recuperar el nombre guardado al hacer login
+    // Estados para los datos del usuario
+    const [userName, setUserName] = useState('Usuario');
+    const [userRole, setUserRole] = useState(''); // 👈 Nuevo estado para el rol
+
+    // Recuperar los datos guardados al hacer login
     useEffect(() => {
         const storedName = localStorage.getItem('userName');
+        const storedRole = localStorage.getItem('userRole'); // 👈 Leemos el rol
+
         if (storedName) setUserName(storedName);
+        if (storedRole) setUserRole(storedRole);
     }, []);
 
     const handleLogout = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('userName');
+        localStorage.removeItem('userEmail');
+        localStorage.removeItem('userRole'); // 👈 Limpiamos también el rol
         navigate('/login');
-        // Usamos navigate en lugar de reload para una mejor UX, 
-        // pero si tu app depende del estado global limpio, reload es aceptable.
         window.location.reload();
     };
 
-    // Lista de ítems de navegación corregida
+    // Lista de ítems de navegación
     const menuItems = [
         { name: 'Dashboard', path: '/', icon: LayoutDashboard },
         { name: 'Nueva Decisión', path: '/new-decision', icon: Brain },
         { name: 'Historial', path: '/history', icon: History },
         { name: 'Configuración', path: '/settings', icon: Settings },
-        { name: 'Mi Perfil', path: '/profile', icon: UserIcon }, // Corregido el icono y la ruta
+        { name: 'Mi Perfil', path: '/profile', icon: UserIcon },
     ];
 
     return (
@@ -54,23 +61,44 @@ export const MainLayout = () => {
                 </div>
 
                 {/* Navegación Principal */}
-                <nav className="flex-1 px-4 py-4 space-y-1">
-                    {menuItems.map((item) => {
-                        const isActive = location.pathname === item.path;
-                        return (
-                            <Link
-                                key={item.name}
-                                to={item.path}
-                                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all font-medium ${isActive
+                <nav className="flex-1 px-4 py-4 overflow-y-auto">
+                    <div className="space-y-1">
+                        {menuItems.map((item) => {
+                            const isActive = location.pathname === item.path;
+                            return (
+                                <Link
+                                    key={item.name}
+                                    to={item.path}
+                                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all font-medium ${isActive
                                         ? 'bg-blue-50 text-blue-700 shadow-sm'
+                                        : 'text-slate-600 hover:bg-gray-100 hover:text-slate-900'
+                                        }`}
+                                >
+                                    <item.icon className={`w-5 h-5 ${isActive ? 'text-blue-600' : ''}`} />
+                                    {item.name}
+                                </Link>
+                            );
+                        })}
+                    </div>
+
+                    {/* 🚨 LÓGICA CONDICIONAL: Solo visible para el ADMIN */}
+                    {userRole === 'ADMIN' && (
+                        <div className="mt-8 pt-4 border-t border-gray-100">
+                            <p className="text-[10px] font-bold text-slate-400 mb-2 uppercase px-3 tracking-widest">
+                                Administración
+                            </p>
+                            <Link
+                                to="/admin/users"
+                                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all font-medium ${location.pathname === '/admin/users'
+                                        ? 'bg-amber-50 text-amber-700 shadow-sm' // Color distinto para diferenciar admin
                                         : 'text-slate-600 hover:bg-gray-100 hover:text-slate-900'
                                     }`}
                             >
-                                <item.icon className={`w-5 h-5 ${isActive ? 'text-blue-600' : ''}`} />
-                                {item.name}
+                                <Users className={`w-5 h-5 ${location.pathname === '/admin/users' ? 'text-amber-600' : ''}`} />
+                                Gestión de Usuarios
                             </Link>
-                        );
-                    })}
+                        </div>
+                    )}
                 </nav>
 
                 {/* SECCIÓN DE USUARIO (INFERIOR) */}
@@ -123,7 +151,9 @@ export const MainLayout = () => {
                         {/* Info */}
                         <div className="flex-1 text-left overflow-hidden">
                             <p className="text-sm font-bold text-slate-900 truncate">{userName}</p>
-                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Cuenta Activa</p>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                                {userRole === 'ADMIN' ? 'Administrador' : 'Cuenta Activa'}
+                            </p>
                         </div>
 
                         {/* Flecha */}

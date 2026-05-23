@@ -1,59 +1,91 @@
 // src/App.tsx
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+
+// Layouts & Wrappers
+import { ProtectedRoute } from './components/layout/ProtectedRoute';
+import { GuestRoute } from './components/layout/GuestRoute';
 import { MainLayout } from './components/layout/MainLayout';
+import { AdminLayout } from './components/layout/AdminLayout';// 👈 Layout del Admin
+
+// Auth y Errores
+import { Login } from './features/auth/Login';
+import { Register } from './features/auth/Register';
+import { NotFound } from './features/errors/NotFound';
+
+// Vistas Cliente
+import { Dashboard } from './features/dashboard/Dashboard';
+import { History } from './features/history/History';
+import { Settings } from './features/settings/Settings';
+import { Profile } from './features/profile/Profile';
+
+// Vistas Flujo de Decisión
 import { StartDecision } from './features/decision-maker/StartDecision';
 import { DefineCriteria } from './features/decision-maker/DefineCriteria';
 import { DefineOptions } from './features/decision-maker/DefineOptions';
 import { EvaluationMatrix } from './features/decision-maker/EvaluationMatrix';
 import { Results } from './features/decision-maker/Results';
 import { ContinueDecision } from './features/decision-maker/ContinueDecision';
-import { Login } from './features/auth/Login';
-import { ProtectedRoute } from './components/layout/ProtectedRoute';
-import { NotFound } from './features/errors/NotFound';
-import { GuestRoute } from './components/layout/GuestRoute';
-import { AdminRoute } from './components/layout/AdminRoute';
+
+// Vistas Admin
+import { AdminDashboard } from './features/admin/AdminDashboard';// 👈 Asegúrate de tener este archivo creado
 import { UserManagement } from './features/admin/UserManagement';
-import { Register } from './features/auth/Register';
-import { Dashboard } from './features/dashboard/Dashboard';
-import { History } from './features/history/History';
-import { Settings } from './features/settings/Settings';
-import { Profile } from './features/profile/Profile';
 
 function App() {
+  // Leemos el rol del usuario desde el almacenamiento local al inicializar
+  const role = localStorage.getItem('userRole');
+
   return (
     <BrowserRouter>
       <Routes>
+
+        {/* RUTAS DE INVITADO (Login / Registro) */}
         <Route element={<GuestRoute />}>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
         </Route>
+
+        {/* RUTAS PROTEGIDAS */}
         <Route element={<ProtectedRoute />}>
 
-        <Route path="/" element={<MainLayout />}>
-          <Route index element={<Dashboard />} />
+          {/* 🟦 MUNDO CLIENTE (Solo si NO es admin) */}
+          {role !== 'ADMIN' ? (
+            <Route path="/" element={<MainLayout />}>
+              <Route index element={<Dashboard />} />
+              <Route path="profile" element={<Profile />} />
+              <Route path="history" element={<History />} />
+              <Route path="settings" element={<Settings />} />
 
-          {/* Rutas del flujo de creación de decisiones */}
-          <Route path="new-decision" element={<StartDecision />} />
-          <Route path="define-criteria" element={<DefineCriteria />} />
-          <Route path="define-options" element={<DefineOptions />} />
-          <Route path="evaluation-matrix" element={<EvaluationMatrix />} />
-          <Route path="results" element={<Results />} />
+              {/* Flujo de Decisiones (Prohibido para Admin) */}
+              <Route path="new-decision" element={<StartDecision />} />
+              <Route path="define-criteria" element={<DefineCriteria />} />
+              <Route path="define-options" element={<DefineOptions />} />
+              <Route path="evaluation-matrix" element={<EvaluationMatrix />} />
+              <Route path="results/:id?" element={<Results />} /> {/* :id? hace que el parámetro sea opcional */}
+              <Route path="continue/:id" element={<ContinueDecision />} />
+            </Route>
+          ) : (
+            // Si es Admin y trata de ir a la raíz del cliente, lo redirigimos a su panel de administración
+            <Route path="/" element={<Navigate to="/admin" replace />} />
+          )}
 
-          {/* NUEVAS RUTAS para arreglar las advertencias de la consola */}
-          <Route path="results/:id" element={<Results />}/>
-          <Route path="continue/:id" element={<ContinueDecision />} />
-          <Route path="history" element={<History />} />
-          <Route path="settings" element={<Settings />} />
-          <Route path="profile" element={<Profile />} />
-          </Route>
+          {/* 🟥 MUNDO ADMIN (Solo si ES admin) */}
+          {role === 'ADMIN' ? (
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="users" element={<UserManagement />} />
+              {/* Aquí irán Monitoreo Global, Configuración IA, etc. */}
+            </Route>
+          ) : (
+            // Si es Cliente y trata de ir a rutas de /admin, lo redirigimos a su dashboard
+            <Route path="/admin/*" element={<Navigate to="/" replace />} />
+          )}
+
         </Route>
-        <Route element={<AdminRoute />}>
-          <Route path="admin/users" element={<UserManagement />} />
-          {/* Aquí irán más rutas de admin si las necesitas */}
-        </Route>
+
+        {/* ERROR 404 */}
         <Route path="*" element={<NotFound />} />
+
       </Routes>
-      
     </BrowserRouter>
   );
 }

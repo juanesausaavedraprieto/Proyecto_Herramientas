@@ -27,6 +27,7 @@ public class AuthController {
     public ResponseEntity<AuthenticationResponse> authenticate(
             @RequestBody LoginRequest request
     ) {
+        // El controlador solo recibe la petición y devuelve la respuesta del servicio
         return ResponseEntity.ok(authenticationService.authenticate(request));
     }
 }

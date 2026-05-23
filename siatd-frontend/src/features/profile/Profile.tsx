@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { User, Mail, ShieldCheck, Edit2, Save, X, Loader2, Lock } from 'lucide-react';
+// IMPORTANTE: Ajusta esta ruta a donde tengas configurada tu instancia de Axios o Fetch
+import { api } from '../../api/axios';
 
 export const Profile = () => {
     // Estado principal del usuario
     const [user, setUser] = useState({
         name: localStorage.getItem('userName') || 'Usuario Estudiante',
-        email: localStorage.getItem('userEmail') || 'juan@correo.com', // Asume que tienes el correo guardado, si no, usa el default
+        email: localStorage.getItem('userEmail') || 'juan@correo.com',
         role: 'ESTUDIANTE'
     });
 
@@ -31,13 +33,12 @@ export const Profile = () => {
 
     // Guardar cambios
     const handleSave = async () => {
-        if (!formData.name.trim()) return; // Evitar guardar nombres vacíos
+        if (!formData.name.trim()) return;
 
         setIsLoading(true);
         try {
-            // AQUÍ IRÍA TU LLAMADA A LA API (ej. api.put('/users/me', formData))
-            // Simulamos un tiempo de carga de 1 segundo para el efecto visual
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            // 🚨 AHORA SÍ LLAMAMOS AL BACKEND REAL
+            await api.put('/users/me', { name: formData.name });
 
             // Actualizamos el estado local
             setUser(prev => ({ ...prev, name: formData.name }));
@@ -48,10 +49,11 @@ export const Profile = () => {
             // Desactivamos el modo edición
             setIsEditing(false);
 
-            // Opcional: Podrías disparar un evento para que otros componentes se actualicen
+            // Disparamos un evento para que otros componentes se actualicen
             window.dispatchEvent(new Event('storage'));
         } catch (error) {
             console.error("Error al actualizar el perfil", error);
+            alert("No se pudo actualizar el nombre. Revisa la consola.");
         } finally {
             setIsLoading(false);
         }

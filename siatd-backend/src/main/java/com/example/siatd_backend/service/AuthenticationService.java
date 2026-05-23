@@ -25,7 +25,7 @@ public class AuthenticationService {
     private final AuthenticationManager authenticationManager;
 
     /**
-     * Registra un nuevo usuario y devuelve su primer Token + Nombre.
+     * Registra un nuevo usuario y devuelve Token + Datos del usuario.
      */
     public AuthenticationResponse register(RegisterRequest request) {
         // Validación de edad profesional
@@ -38,21 +38,23 @@ public class AuthenticationService {
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .birthDate(request.getBirthDate())
-                .role(Role.USER)
+                .role(Role.USER) // Por defecto asignamos el rol USER
                 .build();
 
         userRepository.save(user);
         var jwtToken = jwtService.generateToken(user);
 
-        // Retornamos el objeto con el nombre incluido
+        // 🚨 AQUÍ AGREGAMOS EMAIL Y ROLE PARA QUE EL FRONTEND LOS RECIBA
         return AuthenticationResponse.builder()
                 .token(jwtToken)
                 .name(user.getName())
+                .email(user.getEmail())
+                .role(user.getRole().name())
                 .build();
     }
 
     /**
-     * Autentica al usuario y devuelve el Token + Nombre para el Sidebar.
+     * Autentica al usuario y devuelve Token + Datos del usuario para el Frontend.
      */
     public AuthenticationResponse authenticate(LoginRequest request) {
         // 1. Verificación de credenciales con Spring Security
@@ -70,10 +72,12 @@ public class AuthenticationService {
 
         var jwtToken = jwtService.generateToken(user);
 
-        // 3. Construimos la respuesta con el nombre para que el Front la guarde
+        // 3. 🚨 CONSTRUIMOS LA RESPUESTA COMPLETA CON EL BUILDER
         return AuthenticationResponse.builder()
                 .token(jwtToken)
-                .name(user.getName()) // 👈 ESTA ES LA MAGIA
+                .name(user.getName())
+                .email(user.getEmail())
+                .role(user.getRole().name())
                 .build();
     }
 }

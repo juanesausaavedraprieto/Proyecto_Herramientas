@@ -19,51 +19,49 @@ La plataforma permite definir un dilema, establecer criterios ponderados, evalua
 
 ## ✨ Características Principales
 
-### **Funcionalidades del Sistema**
-
-- **🔐 Autenticación segura** con JWT (Registro e Inicio de sesión)
-- **📋 Gestión completa de decisiones** (crear, continuar, historial)
-- **⚖️ Definición de criterios** con pesos e impacto (beneficio/costo)
-- **🔀 Definición de alternativas/opciones**
-- **📊 Matriz de Evaluación** interactiva (calificación 1-10)
-- **🧠 Motor de Decisión TOPSIS** (algoritmo multicriterio avanzado)
-- **📈 Visualizaciones**:
-  - Gráfico de barras con puntajes finales
-  - Gráfico Radar multidimensional
-  - Análisis de Sensibilidad (sliders de pesos)
-- **📄 Exportación de reportes** en PDF profesional
-- **🗄️ Historial de decisiones** guardadas
-- **👤 Perfil de usuario** y configuración
+- **Autenticación segura** con JWT (Registro e Inicio de sesión)
+- **Gestión completa de decisiones** (crear, continuar, historial)
+- **Definición de criterios** con pesos e impacto (beneficio/costo)
+- **Definición de alternativas/opciones**
+- **Matriz de Evaluación** interactiva (calificación 1-10)
+- **Motor de Decisión TOPSIS** (algoritmo multicriterio avanzado)
+- **Visualizaciones**: Gráfico de barras, Gráfico Radar y Análisis de Sensibilidad
+- **Exportación de reportes** en PDF profesional
+- **Historial de decisiones** guardadas
+- **👤 Perfil de usuario**
 
 ---
 
 ## 🛠️ Tecnologías Utilizadas
 
 ### **Backend**
-- **Spring Boot 4.0** + Spring Security + JWT
-- **Spring Data JPA** + PostgreSQL
-- **Lombok** + Validaciones
-- **TOPSIS Algorithm** implementado desde cero
+- Spring Boot 4.0 + Spring Security + JWT
+- Spring Data JPA + PostgreSQL
+- Algoritmo TOPSIS implementado
 
 ### **Frontend**
-- **React 19** + **TypeScript**
-- **Vite** + **Tailwind CSS**
-- **Zustand** (gestión de estado)
-- **Recharts** (visualizaciones)
-- **React Hook Form** + **Zod** (validaciones)
-- **jsPDF** + **html-to-image** (exportación)
+- React 19 + TypeScript
+- Vite + Tailwind CSS
+- Zustand + Recharts + React Hook Form
 
 ---
 
 ## 🚀 Cómo Ejecutar el Proyecto
 
-### **Requisitos Previos**
-- **Java 21** o superior
-- **Node.js 20** o superior
-- **PostgreSQL** (base de datos)
+### Requisitos
+- Java 21
+- Node.js 20+
+- PostgreSQL
 
-### **1. Backend (siatd-backend)**
-
+### Backend
 ```bash
 cd siatd-backend
 ./mvnw spring-boot:run
+
+👥 Integrantes
+
+Juan Saavedra
+Raul Zurita
+
+📄 Licencia
+Este proyecto fue desarrollado con fines académicos como trabajo grupal.

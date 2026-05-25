@@ -1,20 +1,31 @@
 import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, Activity, Settings, LogOut } from 'lucide-react';
+import { useTranslation } from 'react-i18next'; // 👈 Importamos el hook
+import { LayoutDashboard, Users, Activity, Settings, LogOut, Globe } from 'lucide-react'; // 👈 Añadimos Globe
 
 export const AdminLayout = () => {
     const navigate = useNavigate();
     const location = useLocation();
 
+    // 👈 Inicializamos la traducción
+    const { t, i18n } = useTranslation();
+
     const handleLogout = () => {
         localStorage.clear();
-        navigate('/login');
+        window.location.href = '/login';
     };
 
+    // 👈 Función para cambiar el idioma
+    const toggleLanguage = () => {
+        const newLang = i18n.language === 'es' ? 'en' : 'es';
+        i18n.changeLanguage(newLang);
+    };
+
+    // 👈 Mapeo con t()
     const adminLinks = [
-        { name: 'Panel Principal', icon: LayoutDashboard, path: '/admin' },
-        { name: 'Gestión de Usuarios', icon: Users, path: '/admin/users' },
-        { name: 'Auditoría Global', icon: Activity, path: '/admin/audit' },
-        { name: 'Configuración SIATD', icon: Settings, path: '/admin/settings' },
+        { name: t('admin.dashboard'), icon: LayoutDashboard, path: '/admin' },
+        { name: t('admin.users'), icon: Users, path: '/admin/users' },
+        { name: t('admin.audit'), icon: Activity, path: '/admin/audit' },
+        { name: t('admin.settings'), icon: Settings, path: '/admin/settings' },
     ];
 
     return (
@@ -44,13 +55,22 @@ export const AdminLayout = () => {
                     })}
                 </nav>
 
-                <div className="p-4 border-t border-slate-800">
+                <div className="p-4 border-t border-slate-800 flex flex-col gap-2">
+                    {/* 👈 Botón de Idioma */}
+                    <button
+                        onClick={toggleLanguage}
+                        className="flex items-center justify-center gap-2 w-full px-4 py-2 text-sm text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-colors font-bold uppercase tracking-wider"
+                    >
+                        <Globe className="w-4 h-4" />
+                        {i18n.language === 'es' ? 'English' : 'Español'}
+                    </button>
+
                     <button
                         onClick={handleLogout}
                         className="flex items-center gap-3 w-full px-4 py-3 text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-xl transition-colors font-bold"
                     >
                         <LogOut className="w-5 h-5" />
-                        Cerrar Sesión
+                        {t('sidebar.logout')}
                     </button>
                 </div>
             </aside>

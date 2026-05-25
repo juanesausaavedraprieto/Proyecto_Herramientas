@@ -3,21 +3,18 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { api } from '../../api/axios';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom'; // 👈 Eliminamos useNavigate
 import { Brain, Lock, Mail, ArrowRight } from 'lucide-react';
 
-// 1. Definimos el esquema de validación estricto
+// Definimos el esquema de validación estricto
 const loginSchema = z.object({
     email: z.string().min(1, 'El correo es obligatorio').email('Formato de correo inválido'),
     password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
 });
 
-// Extraemos el tipo de TypeScript a partir del esquema
 type LoginForm = z.infer<typeof loginSchema>;
 
 export const Login = () => {
-    const navigate = useNavigate();
-
     const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginForm>({
         resolver: zodResolver(loginSchema),
     });
@@ -28,13 +25,16 @@ export const Login = () => {
                 email: data.email,
                 password: data.password
             });
+
             console.log("📦 Datos recibidos del server:", response.data);
 
-            // 🚨 EXTRAEMOS TODOS LOS DATOS QUE AHORA ENVÍA EL BACKEND
             const { token, name, email, role } = response.data;
 
             if (token) {
-                // Guardar token y datos del usuario en localStorage
+                // 1. 🚨 LIMPIAMOS BASURA DE SESIONES ANTERIORES
+                localStorage.clear();
+
+                // 2. Guardar datos reales del usuario
                 localStorage.setItem('token', token);
                 localStorage.setItem('userName', name || 'Usuario');
                 localStorage.setItem('userEmail', email || data.email);
@@ -42,8 +42,12 @@ export const Login = () => {
 
                 console.log("✅ Datos de sesión guardados correctamente");
 
-                // Redirigir al Dashboard
-                navigate('/');
+                // 3. 🚨 EL HARD RESET: Redirigimos destruyendo la memoria anterior
+                if (role === 'ADMIN') {
+                    window.location.replace('/admin');
+                } else {
+                    window.location.replace('/');
+                }
             }
         } catch (err) {
             console.error("Error en login:", err);
@@ -71,8 +75,7 @@ export const Login = () => {
                                 <input
                                     {...register('email')}
                                     type="email"
-                                    className={`w-full pl-10 pr-4 py-3 rounded-xl border outline-none transition-all ${errors.email ? 'border-red-400 focus:ring-red-500' : 'border-gray-200 focus:ring-blue-500 focus:border-blue-500'
-                                        }`}
+                                    className={`w-full pl-10 pr-4 py-3 rounded-xl border outline-none transition-all ${errors.email ? 'border-red-400 focus:ring-red-500' : 'border-gray-200 focus:ring-blue-500 focus:border-blue-500'}`}
                                     placeholder="ejemplo@correo.com"
                                 />
                             </div>
@@ -86,8 +89,7 @@ export const Login = () => {
                                 <input
                                     {...register('password')}
                                     type="password"
-                                    className={`w-full pl-10 pr-4 py-3 rounded-xl border outline-none transition-all ${errors.password ? 'border-red-400 focus:ring-red-500' : 'border-gray-200 focus:ring-blue-500 focus:border-blue-500'
-                                        }`}
+                                    className={`w-full pl-10 pr-4 py-3 rounded-xl border outline-none transition-all ${errors.password ? 'border-red-400 focus:ring-red-500' : 'border-gray-200 focus:ring-blue-500 focus:border-blue-500'}`}
                                     placeholder="••••••••"
                                 />
                             </div>

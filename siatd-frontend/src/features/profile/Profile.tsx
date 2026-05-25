@@ -5,10 +5,11 @@ import { api } from '../../api/axios';
 
 export const Profile = () => {
     // Estado principal del usuario
+    // Estado principal del usuario
     const [user, setUser] = useState({
-        name: localStorage.getItem('userName') || 'Usuario Estudiante',
-        email: localStorage.getItem('userEmail') || 'juan@correo.com',
-        role: 'ESTUDIANTE'
+        name: localStorage.getItem('userName') || 'Usuario',
+        email: localStorage.getItem('userEmail') || 'Sin correo', // 👈 Ya lee el real
+        role: localStorage.getItem('userRole') || 'USER' // 👈 Ya lee el real
     });
 
     // Estados para manejar la edición

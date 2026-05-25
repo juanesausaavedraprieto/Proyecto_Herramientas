@@ -1,11 +1,11 @@
+// src/features/auth/Register.tsx
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useNavigate, Link } from 'react-router-dom';
-import { api } from '../../api/axios'; // 👈 Verifica esta ruta
+import { Link } from 'react-router-dom'; // 👈 Eliminamos useNavigate
+import { api } from '../../api/axios';
 import { Brain, User, Mail, Lock, Calendar, ArrowRight, Loader2 } from 'lucide-react';
 
-// 1. Esquema de validación profesional con Zod
 const registerSchema = z.object({
     name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
     email: z.string().email('Formato de correo electrónico inválido'),
@@ -34,7 +34,6 @@ const registerSchema = z.object({
 type RegisterForm = z.infer<typeof registerSchema>;
 
 export const Register = () => {
-    const navigate = useNavigate();
     const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<RegisterForm>({
         resolver: zodResolver(registerSchema),
     });
@@ -48,12 +47,24 @@ export const Register = () => {
                 birthDate: data.birthDate
             });
 
-            // ⚠️ GUARDAR EL TOKEN ES LA CLAVE
+            // Extraemos datos (por si el backend envía la info completa del nuevo usuario)
             const token = response.data.token;
+            const role = response.data.role || 'USER';
+
             if (token) {
+                // 1. Limpieza total previa
+                localStorage.clear();
+
+                // 2. Guardamos la sesión
                 localStorage.setItem('token', token);
-                console.log("✅ Usuario registrado y token guardado");
-                navigate('/'); // Al Dashboard
+                localStorage.setItem('userName', response.data.name || data.name);
+                localStorage.setItem('userEmail', response.data.email || data.email);
+                localStorage.setItem('userRole', role);
+
+                console.log("✅ Usuario registrado y sesión iniciada");
+
+                // 3. Forzamos recarga y redirigimos (Un nuevo usuario normalmente es Cliente)
+                window.location.replace('/');
             }
         } catch (error: any) {
             console.error("Error en el registro:", error);
@@ -73,7 +84,6 @@ export const Register = () => {
                 </div>
 
                 <form onSubmit={handleSubmit(onSubmit)} className="p-8 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Nombre */}
                     <div className="md:col-span-2">
                         <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Nombre Completo</label>
                         <div className="relative mt-1">
@@ -83,7 +93,6 @@ export const Register = () => {
                         {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
                     </div>
 
-                    {/* Email */}
                     <div className="md:col-span-2">
                         <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Correo Electrónico</label>
                         <div className="relative mt-1">
@@ -93,7 +102,6 @@ export const Register = () => {
                         {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
                     </div>
 
-                    {/* Fecha de Nacimiento */}
                     <div className="md:col-span-2">
                         <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Fecha de Nacimiento</label>
                         <div className="relative mt-1">
@@ -103,7 +111,6 @@ export const Register = () => {
                         {errors.birthDate && <p className="text-red-500 text-xs mt-1">{errors.birthDate.message}</p>}
                     </div>
 
-                    {/* Password */}
                     <div>
                         <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Contraseña</label>
                         <div className="relative mt-1">
@@ -113,7 +120,6 @@ export const Register = () => {
                         {errors.password && <p className="text-red-500 text-xs mt-1 leading-tight">{errors.password.message}</p>}
                     </div>
 
-                    {/* Confirm Password */}
                     <div>
                         <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Confirmar</label>
                         <div className="relative mt-1">

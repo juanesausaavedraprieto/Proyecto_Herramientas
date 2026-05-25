@@ -138,7 +138,7 @@ export const Results = () => {
     if (!data) return (
         <div className="text-center p-10">
             <h2 className="text-xl font-bold text-slate-800">No se encontró la decisión</h2>
-            <button onClick={() => navigate('/dashboard')} className="text-blue-500 underline mt-2">Ir al Dashboard</button>
+            <button onClick={() => navigate('/')} className="text-blue-500 underline mt-2">Ir al Dashboard</button>
         </div>
     );
 
@@ -218,7 +218,7 @@ export const Results = () => {
             </div>
 
             <div className="flex justify-between items-center mt-12 pt-8 border-t border-slate-200">
-                <button onClick={() => navigate(isHistoryView ? '/history' : '/dashboard')} className="flex items-center gap-2 text-slate-500 hover:text-slate-800 font-bold transition-colors">
+                <button onClick={() => navigate(isHistoryView ? '/history' : '/')} className="flex items-center gap-2 text-slate-500 hover:text-slate-800 font-bold transition-colors">
                     <ArrowLeft className="w-5 h-5" /> {isHistoryView ? 'Volver al Historial' : 'Ir al Dashboard'}
                 </button>
                 <button onClick={() => navigate('/new-decision')} className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-2xl font-bold shadow-lg shadow-blue-100">

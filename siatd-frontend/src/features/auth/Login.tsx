@@ -1,4 +1,3 @@
-// src/features/auth/Login.tsx
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -6,13 +5,11 @@ import { api } from '../../api/axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { Brain, Lock, Mail, ArrowRight } from 'lucide-react';
 
-// 1. Definimos el esquema de validación estricto
 const loginSchema = z.object({
     email: z.string().min(1, 'El correo es obligatorio').email('Formato de correo inválido'),
     password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
 });
 
-// Extraemos el tipo de TypeScript a partir del esquema
 type LoginForm = z.infer<typeof loginSchema>;
 
 export const Login = () => {
@@ -28,33 +25,28 @@ export const Login = () => {
                 email: data.email,
                 password: data.password
             });
-            console.log("📦 Datos recibidos del server:", response.data);
 
-            // 🚨 EXTRAEMOS TODOS LOS DATOS QUE AHORA ENVÍA EL BACKEND
             const { token, name, email, role } = response.data;
 
             if (token) {
-                // Guardar token y datos del usuario en localStorage
                 localStorage.setItem('token', token);
                 localStorage.setItem('userName', name || 'Usuario');
                 localStorage.setItem('userEmail', email || data.email);
                 localStorage.setItem('userRole', role || 'USER');
-
-                console.log("✅ Datos de sesión guardados correctamente");
-
-                // Redirigir al Dashboard
                 navigate('/');
             }
         } catch (err) {
-            console.error("Error en login:", err);
-            alert("Credenciales inválidas. Verifica tu correo y contraseña.");
+            console.error('Error en login:', err);
+            alert('Credenciales inválidas. Verifica tu correo y contraseña.');
         }
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-            <div className="max-w-md w-full bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100">
-                <div className="p-8 text-center bg-slate-800 text-white">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4 transition-colors duration-300">
+            <div className="max-w-md w-full bg-white dark:bg-slate-900 rounded-3xl shadow-xl overflow-hidden border border-gray-100 dark:border-slate-700">
+
+                {/* Cabecera */}
+                <div className="p-8 text-center bg-slate-800 dark:bg-slate-950 text-white">
                     <div className="bg-blue-500 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
                         <Brain className="w-8 h-8 text-white" />
                     </div>
@@ -62,17 +54,23 @@ export const Login = () => {
                     <p className="text-slate-300 mt-2 text-sm">Ingresa a tu cuenta para continuar evaluando decisiones.</p>
                 </div>
 
+                {/* Formulario */}
                 <div className="p-8">
                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Correo Electrónico</label>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                Correo Electrónico
+                            </label>
                             <div className="relative">
                                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                                 <input
                                     {...register('email')}
                                     type="email"
-                                    className={`w-full pl-10 pr-4 py-3 rounded-xl border outline-none transition-all ${errors.email ? 'border-red-400 focus:ring-red-500' : 'border-gray-200 focus:ring-blue-500 focus:border-blue-500'
-                                        }`}
+                                    className={`w-full pl-10 pr-4 py-3 rounded-xl border outline-none transition-all bg-white dark:bg-slate-800 text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 ${
+                                        errors.email
+                                            ? 'border-red-400 focus:ring-2 focus:ring-red-500'
+                                            : 'border-gray-200 dark:border-slate-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+                                    }`}
                                     placeholder="ejemplo@correo.com"
                                 />
                             </div>
@@ -80,14 +78,19 @@ export const Login = () => {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Contraseña</label>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                                Contraseña
+                            </label>
                             <div className="relative">
                                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                                 <input
                                     {...register('password')}
                                     type="password"
-                                    className={`w-full pl-10 pr-4 py-3 rounded-xl border outline-none transition-all ${errors.password ? 'border-red-400 focus:ring-red-500' : 'border-gray-200 focus:ring-blue-500 focus:border-blue-500'
-                                        }`}
+                                    className={`w-full pl-10 pr-4 py-3 rounded-xl border outline-none transition-all bg-white dark:bg-slate-800 text-slate-800 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 ${
+                                        errors.password
+                                            ? 'border-red-400 focus:ring-2 focus:ring-red-500'
+                                            : 'border-gray-200 dark:border-slate-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+                                    }`}
                                     placeholder="••••••••"
                                 />
                             </div>
@@ -104,8 +107,11 @@ export const Login = () => {
                         </button>
                     </form>
 
-                    <p className="text-center text-sm text-slate-500 mt-6">
-                        ¿No tienes una cuenta? <Link to="/register" className="text-blue-600 font-semibold hover:underline">Regístrate aquí</Link>
+                    <p className="text-center text-sm text-slate-500 dark:text-slate-400 mt-6">
+                        ¿No tienes una cuenta?{' '}
+                        <Link to="/register" className="text-blue-600 dark:text-blue-400 font-semibold hover:underline">
+                            Regístrate aquí
+                        </Link>
                     </p>
                 </div>
             </div>

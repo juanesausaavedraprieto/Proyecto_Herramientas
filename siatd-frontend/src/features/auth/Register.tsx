@@ -2,10 +2,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useNavigate, Link } from 'react-router-dom';
-import { api } from '../../api/axios'; // 👈 Verifica esta ruta
+import { api } from '../../api/axios';
 import { Brain, User, Mail, Lock, Calendar, ArrowRight, Loader2 } from 'lucide-react';
 
-// 1. Esquema de validación profesional con Zod
 const registerSchema = z.object({
     name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
     email: z.string().email('Formato de correo electrónico inválido'),
@@ -14,9 +13,7 @@ const registerSchema = z.object({
         const now = new Date();
         let age = now.getFullYear() - birth.getFullYear();
         const monthDiff = now.getMonth() - birth.getMonth();
-        if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < birth.getDate())) {
-            age--;
-        }
+        if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < birth.getDate())) age--;
         return age >= 15;
     }, 'Debes tener al menos 15 años para usar SIATD'),
     password: z.string()
@@ -27,8 +24,8 @@ const registerSchema = z.object({
         .regex(/[@$!%*?&]/, 'Debe incluir un carácter especial (@$!%*?&)'),
     confirmPassword: z.string()
 }).refine((data) => data.password === data.confirmPassword, {
-    message: "Las contraseñas no coinciden",
-    path: ["confirmPassword"],
+    message: 'Las contraseñas no coinciden',
+    path: ['confirmPassword'],
 });
 
 type RegisterForm = z.infer<typeof registerSchema>;
@@ -48,23 +45,35 @@ export const Register = () => {
                 birthDate: data.birthDate
             });
 
-            // ⚠️ GUARDAR EL TOKEN ES LA CLAVE
-            const token = response.data.token;
+            const { token, name, email, role } = response.data;
             if (token) {
                 localStorage.setItem('token', token);
-                console.log("✅ Usuario registrado y token guardado");
-                navigate('/'); // Al Dashboard
+                localStorage.setItem('userName', name || 'Usuario');
+                localStorage.setItem('userEmail', email || data.email);
+                localStorage.setItem('userRole', role || 'USER');
+                navigate('/');
             }
         } catch (error: any) {
-            console.error("Error en el registro:", error);
-            alert(error.response?.data?.message || "Error al registrar usuario. Intenta con otro correo.");
+            console.error('Error en el registro:', error);
+            alert(error.response?.data?.message || 'Error al registrar usuario. Intenta con otro correo.');
         }
     };
 
+    const inputClass = (hasError: boolean) =>
+        `w-full pl-10 pr-4 py-2.5 rounded-xl border outline-none transition-all
+        bg-white dark:bg-slate-800 text-slate-800 dark:text-white
+        placeholder:text-slate-400 dark:placeholder:text-slate-500
+        ${hasError
+            ? 'border-red-400 focus:ring-2 focus:ring-red-500'
+            : 'border-gray-200 dark:border-slate-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+        }`;
+
     return (
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-            <div className="max-w-xl w-full bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
-                <div className="p-8 text-center bg-slate-800 text-white">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-6 transition-colors duration-300">
+            <div className="max-w-xl w-full bg-white dark:bg-slate-900 rounded-3xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden">
+
+                {/* Cabecera */}
+                <div className="p-8 text-center bg-slate-800 dark:bg-slate-950 text-white">
                     <div className="bg-blue-500 w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-lg">
                         <Brain className="w-6 h-6 text-white" />
                     </div>
@@ -72,57 +81,93 @@ export const Register = () => {
                     <p className="text-slate-300 text-sm">Únete al Sistema Inteligente de Toma de Decisiones.</p>
                 </div>
 
+                {/* Formulario */}
                 <form onSubmit={handleSubmit(onSubmit)} className="p-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+
                     {/* Nombre */}
                     <div className="md:col-span-2">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Nombre Completo</label>
+                        <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                            Nombre Completo
+                        </label>
                         <div className="relative mt-1">
                             <User className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
-                            <input {...register('name')} className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ej. Juan Saavedra" />
+                            <input
+                                {...register('name')}
+                                className={inputClass(!!errors.name)}
+                                placeholder="Ej. Juan Saavedra"
+                            />
                         </div>
                         {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
                     </div>
 
                     {/* Email */}
                     <div className="md:col-span-2">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Correo Electrónico</label>
+                        <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                            Correo Electrónico
+                        </label>
                         <div className="relative mt-1">
                             <Mail className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
-                            <input {...register('email')} type="email" className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-blue-500" placeholder="usuario@correo.com" />
+                            <input
+                                {...register('email')}
+                                type="email"
+                                className={inputClass(!!errors.email)}
+                                placeholder="usuario@correo.com"
+                            />
                         </div>
                         {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
                     </div>
 
                     {/* Fecha de Nacimiento */}
                     <div className="md:col-span-2">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Fecha de Nacimiento</label>
+                        <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                            Fecha de Nacimiento
+                        </label>
                         <div className="relative mt-1">
                             <Calendar className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
-                            <input {...register('birthDate')} type="date" className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-blue-500" />
+                            <input
+                                {...register('birthDate')}
+                                type="date"
+                                className={inputClass(!!errors.birthDate)}
+                            />
                         </div>
                         {errors.birthDate && <p className="text-red-500 text-xs mt-1">{errors.birthDate.message}</p>}
                     </div>
 
-                    {/* Password */}
+                    {/* Contraseña */}
                     <div>
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Contraseña</label>
+                        <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                            Contraseña
+                        </label>
                         <div className="relative mt-1">
                             <Lock className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
-                            <input {...register('password')} type="password" className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-blue-500" placeholder="••••••••" />
+                            <input
+                                {...register('password')}
+                                type="password"
+                                className={inputClass(!!errors.password)}
+                                placeholder="••••••••"
+                            />
                         </div>
                         {errors.password && <p className="text-red-500 text-xs mt-1 leading-tight">{errors.password.message}</p>}
                     </div>
 
-                    {/* Confirm Password */}
+                    {/* Confirmar Contraseña */}
                     <div>
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Confirmar</label>
+                        <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                            Confirmar
+                        </label>
                         <div className="relative mt-1">
                             <Lock className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
-                            <input {...register('confirmPassword')} type="password" className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-blue-500" placeholder="••••••••" />
+                            <input
+                                {...register('confirmPassword')}
+                                type="password"
+                                className={inputClass(!!errors.confirmPassword)}
+                                placeholder="••••••••"
+                            />
                         </div>
                         {errors.confirmPassword && <p className="text-red-500 text-xs mt-1">{errors.confirmPassword.message}</p>}
                     </div>
 
+                    {/* Botón */}
                     <button
                         type="submit"
                         disabled={isSubmitting}
@@ -133,9 +178,13 @@ export const Register = () => {
                     </button>
                 </form>
 
-                <div className="p-6 bg-slate-50 text-center border-t border-gray-100">
-                    <p className="text-sm text-slate-500">
-                        ¿Ya tienes cuenta? <Link to="/login" className="text-blue-600 font-bold hover:underline">Inicia sesión</Link>
+                {/* Pie */}
+                <div className="p-6 bg-slate-50 dark:bg-slate-800/50 text-center border-t border-gray-100 dark:border-slate-700">
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                        ¿Ya tienes cuenta?{' '}
+                        <Link to="/login" className="text-blue-600 dark:text-blue-400 font-bold hover:underline">
+                            Inicia sesión
+                        </Link>
                     </p>
                 </div>
             </div>

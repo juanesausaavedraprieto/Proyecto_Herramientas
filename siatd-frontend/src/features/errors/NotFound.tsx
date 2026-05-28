@@ -25,7 +25,7 @@ export const NotFound = () => {
                         <ArrowLeft className="w-5 h-5" /> Regresar
                     </button>
                     <button 
-                        onClick={() => navigate('/dashboard')} 
+                        onClick={() => navigate('/')} 
                         className="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200"
                     >
                         <Home className="w-5 h-5" /> Ir al Inicio

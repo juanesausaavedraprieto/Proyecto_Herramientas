@@ -62,7 +62,7 @@ export const MainLayout = () => {
                     <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">SIATD Experto</h1>
                 </div>
 
-                {/* Navegación Principal */}
+                {/* Navegación principal */}
                 <nav className="flex-1 px-4 py-4 overflow-y-auto">
                     <div className="space-y-1">
                         {menuItems.map((item) => {
@@ -149,7 +149,7 @@ export const MainLayout = () => {
                         </div>
                     )}
 
-                    {/* Botón de Perfil en Sidebar */}
+                    {/* Botón perfil */}
                     <button
                         onClick={() => setIsProfileOpen(!isProfileOpen)}
                         className={`w-full flex items-center gap-3 p-2 rounded-xl transition-all ${isProfileOpen ? 'bg-gray-100 dark:bg-slate-700' : 'hover:bg-gray-50 dark:hover:bg-slate-700'
@@ -172,7 +172,7 @@ export const MainLayout = () => {
                 </div>
             </aside>
 
-            {/* --- CONTENIDO PRINCIPAL --- */}
+            {/* --- Principal --- */}
             <main className="flex-1 flex flex-col overflow-hidden">
                 <header className="h-16 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 flex items-center px-8 justify-between z-10 transition-colors duration-200">
                     <h2 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">

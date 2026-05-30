@@ -9,6 +9,7 @@ import com.example.siatd_backend.model.User;
 import com.example.siatd_backend.repository.UserRepository;
 import com.example.siatd_backend.service.DecisionEngineService;
 import com.example.siatd_backend.service.DecisionService;
+import com.example.siatd_backend.service.GeminiAiService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,28 +24,25 @@ import java.util.UUID;
 public class DecisionController {
 
     private final DecisionService decisionService;
+    private final GeminiAiService geminiAiService; // 🚨 El servicio de IA está inyectado
     private final DecisionEngineService decisionEngineService;
     private final UserRepository userRepository;
 
     public DecisionController(
             DecisionService decisionService,
             DecisionEngineService decisionEngineService,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            GeminiAiService geminiAiService) {
         this.decisionService = decisionService;
         this.decisionEngineService = decisionEngineService;
         this.userRepository = userRepository;
+        this.geminiAiService = geminiAiService;
     }
 
-    /**
-     * CORRECCIÓN CRÍTICA: Obtiene todas las decisiones del usuario autenticado.
-     * Este es el método que el Dashboard llama (GET /api/decisions).
-     */
     @GetMapping
     public ResponseEntity<List<Decision>> getAllDecisions(Principal principal) {
         try {
-            // Extraemos el email del token JWT a través del objeto Principal
             String email = principal.getName();
-            // Retornamos solo las decisiones que pertenecen a este email
             List<Decision> userDecisions = decisionService.getAllDecisionsForUser(email);
             return ResponseEntity.ok(userDecisions);
         } catch (Exception e) {
@@ -52,9 +50,6 @@ public class DecisionController {
         }
     }
 
-    /**
-     * Crea una nueva decisión vinculándola automáticamente al usuario logueado.
-     */
     @PostMapping
     public ResponseEntity<Decision> createDecision(@RequestBody Decision decision, Principal principal) {
         try {
@@ -81,29 +76,39 @@ public class DecisionController {
         return new ResponseEntity<>(savedOption, HttpStatus.CREATED);
     }
 
-    // En tu DecisionController.java
+    // 🚨 EL MÉTODO CORREGIDO QUE CONECTA TOPSIS CON GEMINI 🚨
     @PostMapping("/{decisionId}/calculate")
     public ResponseEntity<RecommendationResponse> calculateDecision(
             @PathVariable UUID decisionId,
             @RequestBody MatrixRequest matrixRequest) {
 
-        // 1. Calculamos la mejor opción con el Motor TOPSIS
+        // 1. Calculamos la mejor opción con el Motor TOPSIS (Matemática pura)
         RecommendationResponse result = decisionEngineService.calculateBestOption(decisionId, matrixRequest);
 
         // 2. Buscamos la decisión en la Base de Datos
         Decision decision = decisionService.getDecisionById(decisionId)
                 .orElseThrow(() -> new RuntimeException("Decisión no encontrada"));
 
-        // 3. 🚨 GUARDAMOS ABSOLUTAMENTE TODO EN LA BASE DE DATOS 🚨
+        // 3. 🚨 LLAMAMOS A LA INTELIGENCIA ARTIFICIAL DE GOOGLE 🚨
+        // Le pasamos el título del dilema, quién ganó, y los porcentajes
+        String justificacionIA = geminiAiService.generateDecisionJustification(
+                decision.getTitle(),
+                result.getRecommendedOption().getName(),
+                result.getFinalScores()
+        );
+        
+        // 4. Reemplazamos la justificación estática de TOPSIS por la respuesta humana de Gemini
+        result.setJustification(justificacionIA);
+
+        // 5. Guardamos TODO en la Base de Datos
         decision.setEvaluationMatrix(convertMapKeysToStrings(matrixRequest.getScores()));
         decision.setRecommendedOption(result.getRecommendedOption());
-        decision.setJustification(result.getJustification());
+        decision.setJustification(justificacionIA); // Guardamos la IA en PostgreSQL
         decision.setFinalScores(result.getFinalScores());
 
-        // 4. Actualizamos la BD
         decisionService.updateDecision(decision);
 
-        // 5. Retornamos la respuesta al Frontend
+        // 6. Retornamos la respuesta al Frontend
         return ResponseEntity.ok(result);
     }
 

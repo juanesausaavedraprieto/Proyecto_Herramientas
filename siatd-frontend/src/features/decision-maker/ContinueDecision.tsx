@@ -11,7 +11,7 @@ export const ContinueDecision = () => {
     useEffect(() => {
         const fetchAndResume = async () => {
             if (!id) {
-                navigate('/dashboard');
+                navigate('/');
                 return;
             }
 
@@ -53,7 +53,7 @@ export const ContinueDecision = () => {
             } catch (error) {
                 console.error('Error al reanudar la decisión:', error);
                 alert('Hubo un error al cargar el progreso de esta decisión.');
-                navigate('/dashboard');
+                navigate('/');
             }
         };
 

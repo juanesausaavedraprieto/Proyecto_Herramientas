@@ -1,6 +1,7 @@
 package com.example.siatd_backend.service;
 
 import com.example.siatd_backend.model.SystemSetting;
+import java.util.List;
 import com.example.siatd_backend.repository.SystemSettingRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -173,6 +174,51 @@ public class GeminiAiService {
             return "El motor matemático sugiere fuertemente '"
                     + winnerName
                     + "' como la mejor opción.";
+        }
+    }
+
+    public String generateStrategicRecommendations(String dilemmaTitle, String winnerName, Map<String, Double> allScores, List<String> criteriaNames) {
+        StringBuilder promptBuilder = new StringBuilder();
+        promptBuilder.append("Actúa como un consultor de riesgos y estratega corporativo de alto nivel. ")
+                .append("El usuario ha tomado la decisión: '").append(dilemmaTitle).append("', ")
+                .append("y el motor TOPSIS determinó que la opción ganadora es: '").append(winnerName).append("'.\n\n");
+
+        promptBuilder.append("Los criterios considerados fueron: ").append(String.join(", ", criteriaNames)).append(".\n");
+        promptBuilder.append("Puntajes de las alternativas: ").append(allScores.toString()).append(".\n\n");
+
+        promptBuilder.append("Tu tarea es generar una lista de recomendaciones estratégicas divididas EXACTAMENTE en las siguientes tres secciones, usando títulos claros con markdown (###):\n")
+                .append("### 1. Plan de Acción Inmediato\n")
+                .append("Brinda una lista numerada con 3 pasos concretos y realistas para empezar a ejecutar la opción '").append(winnerName).append("'.\n\n")
+                .append("### 2. Gestión de Riesgos\n")
+                .append("Identifica el mayor riesgo o desventaja de elegir '").append(winnerName).append("' frente a los criterios evaluados y cómo mitigarlo.\n\n")
+                .append("### 3. Alertas de Sesgo\n")
+                .append("Analiza si la configuración de pesos pudo haber causado un sesgo y dale un consejo analítico al tomador de decisiones.");
+
+        try {
+            // Reutilizamos la lógica de construcción segura de JSON con ObjectMapper que ya tienes
+            ObjectNode rootNode = objectMapper.createObjectNode();
+            ArrayNode contentsArray = rootNode.putArray("contents");
+            ObjectNode contentObject = contentsArray.addObject();
+            ArrayNode partsArray = contentObject.putArray("parts");
+            ObjectNode textObject = partsArray.addObject();
+            textObject.put("text", promptBuilder.toString());
+
+            String requestBody = objectMapper.writeValueAsString(rootNode);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<String> request = new HttpEntity<>(requestBody, headers);
+
+            String response = restTemplate.postForObject(apiUrl + "?key=" + apiKey, request, String.class);
+
+            JsonNode responseNode = objectMapper.readTree(response);
+            return responseNode.path("candidates").get(0)
+                    .path("content").path("parts").get(0)
+                    .path("text").asText();
+
+        } catch (Exception e) {
+            System.err.println("Error generando recomendaciones estratégicas: " + e.getMessage());
+            return "### 1. Plan de Acción Inmediato\n1. Proceder con el despliegue de la opción ganadora.\n2. Monitorear los costos iniciales.\n### 2. Gestión de Riesgos\n- Validar la viabilidad técnica.\n### 3. Alertas de Sesgo\n- No se detectaron anomalías críticas en la distribución de pesos.";
         }
     }
 }

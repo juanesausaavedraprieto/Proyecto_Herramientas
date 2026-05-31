@@ -76,39 +76,71 @@ public class DecisionController {
         return new ResponseEntity<>(savedOption, HttpStatus.CREATED);
     }
 
-    // 🚨 EL MÉTODO CORREGIDO QUE CONECTA TOPSIS CON GEMINI 🚨
     @PostMapping("/{decisionId}/calculate")
     public ResponseEntity<RecommendationResponse> calculateDecision(
             @PathVariable UUID decisionId,
             @RequestBody MatrixRequest matrixRequest) {
 
-        // 1. Calculamos la mejor opción con el Motor TOPSIS (Matemática pura)
-        RecommendationResponse result = decisionEngineService.calculateBestOption(decisionId, matrixRequest);
+        // 1. Ejecutar TOPSIS
+        RecommendationResponse result
+                = decisionEngineService.calculateBestOption(
+                        decisionId,
+                        matrixRequest
+                );
 
-        // 2. Buscamos la decisión en la Base de Datos
+        // 2. Obtener la decisión
         Decision decision = decisionService.getDecisionById(decisionId)
-                .orElseThrow(() -> new RuntimeException("Decisión no encontrada"));
+                .orElseThrow(()
+                        -> new RuntimeException("Decisión no encontrada"));
 
-        // 3. 🚨 LLAMAMOS A LA INTELIGENCIA ARTIFICIAL DE GOOGLE 🚨
-        // Le pasamos el título del dilema, quién ganó, y los porcentajes
-        String justificacionIA = geminiAiService.generateDecisionJustification(
-                decision.getTitle(),
-                result.getRecommendedOption().getName(),
+        // 3. Obtener nombres de criterios para darle contexto a Gemini
+        List<String> criteriaNames = decision.getCriteria().stream()
+                .map(Criterion::getName)
+                .toList();
+
+        // 4. Generar justificación clásica
+        String justificacionIA
+                = geminiAiService.generateDecisionJustification(
+                        decision.getTitle(),
+                        result.getRecommendedOption().getName(),
+                        result.getFinalScores()
+                );
+
+        // 5. Generar recomendaciones estratégicas avanzadas
+        String recomendacionesEstrategicas
+                = geminiAiService.generateStrategicRecommendations(
+                        decision.getTitle(),
+                        result.getRecommendedOption().getName(),
+                        result.getFinalScores(),
+                        criteriaNames
+                );
+
+        // 6. Guardar información en la decisión
+        decision.setJustification(justificacionIA);
+
+        // NUEVO CAMPO
+        decision.setRecommendations(recomendacionesEstrategicas);
+
+        decision.setEvaluationMatrix(
+                convertMapKeysToStrings(
+                        matrixRequest.getScores()
+                )
+        );
+
+        decision.setRecommendedOption(
+                result.getRecommendedOption()
+        );
+
+        decision.setFinalScores(
                 result.getFinalScores()
         );
-        
-        // 4. Reemplazamos la justificación estática de TOPSIS por la respuesta humana de Gemini
-        result.setJustification(justificacionIA);
 
-        // 5. Guardamos TODO en la Base de Datos
-        decision.setEvaluationMatrix(convertMapKeysToStrings(matrixRequest.getScores()));
-        decision.setRecommendedOption(result.getRecommendedOption());
-        decision.setJustification(justificacionIA); // Guardamos la IA en PostgreSQL
-        decision.setFinalScores(result.getFinalScores());
-
+        // 7. Guardar en base de datos
         decisionService.updateDecision(decision);
 
-        // 6. Retornamos la respuesta al Frontend
+        // 8. Enviar al frontend
+        result.setJustification(justificacionIA);
+
         return ResponseEntity.ok(result);
     }
 

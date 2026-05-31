@@ -2,15 +2,78 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useDecisionStore } from '../../store/useDecisionStore';
 import {
-    Trophy, ArrowLeft, PieChart, Loader2, Download, FileText, AlertTriangle, Activity, Sliders
+    Trophy, ArrowLeft, PieChart, Loader2, Download, FileText,
+    AlertTriangle, Activity, Sliders, ClipboardList, ShieldAlert,
+    Sparkles, CheckCircle2
 } from 'lucide-react';
 import { ScoreChart } from './components/ScoreChart';
-import { RadarEvaluationChart } from './components/RadarEvaluationChart'; // 👈 NUEVO
-import { SensitivityPanel } from './components/SensitivityPanel'; // 👈 NUEVO
+import { RadarEvaluationChart } from './components/RadarEvaluationChart';
+import { SensitivityPanel } from './components/SensitivityPanel';
 import { api } from '../../api/axios';
 
 import jsPDF from 'jspdf';
 import { toPng } from 'html-to-image';
+
+interface RecommendationsProps {
+    rawRecommendations: string;
+}
+
+export const StrategicRecommendations = ({ rawRecommendations }: RecommendationsProps) => {
+    // Función simple para limpiar o formatear las secciones si vienen con marcadores ###
+    const sections = rawRecommendations.split('###');
+
+    const getSectionContent = (index: number) => {
+        if (!sections[index]) return 'Procesando sugerencias analíticas...';
+        // Removemos el título original del split para dejar solo el cuerpo
+        return sections[index].replace(/^\s*\d+\.\s*[^\n]*/g, '').trim();
+    };
+
+    return (
+        <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm p-8 mt-8 animate-in fade-in duration-700">
+            <div className="flex items-center gap-2 mb-6">
+                <Sparkles className="w-6 h-6 text-indigo-500 animate-pulse" />
+                <h3 className="text-xl font-black text-slate-800">Consultoría Estratégica del Sistema</h3>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+                {/* Bloque 1: Plan de Acción */}
+                <div className="bg-emerald-50/40 border border-emerald-100/60 p-6 rounded-2xl flex flex-col gap-3">
+                    <div className="flex items-center gap-2 text-emerald-800 font-bold text-sm uppercase tracking-wider">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                        Plan de Acción
+                    </div>
+                    <div className="text-slate-700 text-sm leading-relaxed whitespace-pre-line font-medium">
+                        {getSectionContent(1) || '1. Iniciar preparativos.\n2. Evaluar recursos financieros.\n3. Ejecutar fase piloto.'}
+                    </div>
+                </div>
+
+                {/* Bloque 2: Gestión de Riesgos */}
+                <div className="bg-amber-50/40 border border-amber-100/60 p-6 rounded-2xl flex flex-col gap-3">
+                    <div className="flex items-center gap-2 text-amber-800 font-bold text-sm uppercase tracking-wider">
+                        <AlertTriangle className="w-5 h-5 text-amber-600" />
+                        Mitigación de Riesgos
+                    </div>
+                    <div className="text-slate-700 text-sm leading-relaxed whitespace-pre-line font-medium">
+                        {getSectionContent(2)}
+                    </div>
+                </div>
+
+                {/* Bloque 3: Alertas de Sesgo */}
+                <div className="bg-indigo-50/40 border border-indigo-100/60 p-6 rounded-2xl flex flex-col gap-3">
+                    <div className="flex items-center gap-2 text-indigo-800 font-bold text-sm uppercase tracking-wider">
+                        <ShieldAlert className="w-5 h-5 text-indigo-600" />
+                        Control de Sesgo
+                    </div>
+                    <div className="text-slate-700 text-sm leading-relaxed whitespace-pre-line font-medium">
+                        {getSectionContent(3)}
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    );
+};
 
 export const Results = () => {
     const { id } = useParams();
@@ -38,12 +101,13 @@ export const Results = () => {
                         title: resData.title,
                         recommendedOptionName: resData.recommendedOption?.name || "Sin recomendación",
                         justification: resData.justification || "Análisis recuperado del historial.",
+                        recommendations: resData.recommendations || "", // 👈 Recogemos recomendaciones del backend
                         finalScores: resData.finalScores || {},
                         stressLevel: resData.stressLevel || 1,
                         urgencyScore: resData.urgencyScore || 1,
-                        criteria: resData.criteria || [],     // 👈 Necesario para el Radar/Sliders
-                        options: resData.options || [],       // 👈 Necesario para el Radar
-                        matrix: resData.evaluationMatrix || {}// 👈 Necesario para el Radar
+                        criteria: resData.criteria || [],
+                        options: resData.options || [],
+                        matrix: resData.evaluationMatrix || {}
                     });
 
                     if (resData.criteria) {
@@ -60,12 +124,13 @@ export const Results = () => {
                     title: decision.title,
                     recommendedOptionName: recommendation.recommendedOption.name,
                     justification: recommendation.justification,
+                    recommendations: recommendation.recommendations || "", // 👈 Recogemos recomendaciones del store
                     finalScores: recommendation.finalScores,
                     stressLevel: decision.stressLevel || 1,
                     urgencyScore: decision.urgencyScore || 1,
                     criteria: decision.criteria || [],
                     options: decision.options || [],
-                    matrix: {} // Si es nueva y no fuimos al backend, la matriz puede venir del store
+                    matrix: {}
                 });
                 if (decision.criteria) {
                     setLocalWeights(decision.criteria.map((c: any) => ({ id: c.id, name: c.name, weight: c.weight })));
@@ -112,9 +177,7 @@ export const Results = () => {
     const radarData = data?.criteria?.map((c: any) => {
         const row: any = { subject: c.name };
         data?.options?.forEach((opt: any) => {
-            // Buscamos el puntaje exacto de esa opción en ese criterio
             const rawScore = data?.matrix?.[opt.id]?.[c.id] || 0;
-            // Lo multiplicamos por 10 (ej. si el puntaje era 1 a 10, lo pasamos a escala 100 para el gráfico)
             row[opt.name] = rawScore * 10;
         });
         return row;
@@ -125,7 +188,6 @@ export const Results = () => {
     // Manejador del Slider
     const handleWeightChange = (criterionId: string, newWeight: number) => {
         setLocalWeights(prev => prev.map(w => w.id === criterionId ? { ...w, weight: newWeight } : w));
-        // 💡 Aquí a futuro podemos hacer que recalcule chartData en tiempo real
     };
 
     if (isLoading) return (
@@ -143,7 +205,7 @@ export const Results = () => {
     );
 
     return (
-        <div className="max-w-5xl mx-auto mt-6 px-4 mb-20 animate-in fade-in duration-500">
+        <div className="max-w-6xl mx-auto mt-6 px-4 mb-20 animate-in fade-in duration-500">
 
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                 <div>
@@ -186,7 +248,7 @@ export const Results = () => {
                     </div>
                 </div>
 
-                {/* --- NUEVA SECCIÓN DE GRÁFICOS (Layout Grid) --- */}
+                {/* --- SECCIÓN DE GRÁFICOS (Layout Grid) --- */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
                     {/* Gráfico de Barras */}
                     <div style={{ backgroundColor: '#ffffff', borderColor: '#f1f5f9' }} className="p-6 rounded-3xl shadow-sm border">
@@ -214,6 +276,11 @@ export const Results = () => {
                     <div className="mt-8 border-t border-dashed border-slate-200 pt-8">
                         <SensitivityPanel criteria={localWeights} onWeightChange={handleWeightChange} />
                     </div>
+                )}
+
+                {/* --- NUEVA CONSULTORÍA ESTRATÉGICA --- */}
+                {data?.recommendations && (
+                    <StrategicRecommendations rawRecommendations={data.recommendations} />
                 )}
             </div>
 

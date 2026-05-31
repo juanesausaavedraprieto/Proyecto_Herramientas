@@ -64,7 +64,7 @@ public class Decision {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private Map<String, Map<String, Double>> evaluationMatrix;
-    
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "recommended_option_id")
     private Option recommendedOption;
@@ -75,4 +75,6 @@ public class Decision {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private Map<String, Double> finalScores;
+    @Column(columnDefinition = "TEXT")
+    private String recommendations; // Nuevo campo en PostgreSQL para las sugerencias de la IA
 }

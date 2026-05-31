@@ -6,6 +6,7 @@ export interface Recommendation {
     recommendedOption: Option;
     finalScores: Record<string, number>;
     justification: string;
+    recommendations?: string;
 }
 
 interface DecisionState {

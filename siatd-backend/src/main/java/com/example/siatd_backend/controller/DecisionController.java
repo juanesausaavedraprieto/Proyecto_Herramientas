@@ -9,6 +9,7 @@ import com.example.siatd_backend.model.User;
 import com.example.siatd_backend.repository.UserRepository;
 import com.example.siatd_backend.service.DecisionEngineService;
 import com.example.siatd_backend.service.DecisionService;
+import com.example.siatd_backend.service.GeminiAiService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,28 +24,25 @@ import java.util.UUID;
 public class DecisionController {
 
     private final DecisionService decisionService;
+    private final GeminiAiService geminiAiService; // 🚨 El servicio de IA está inyectado
     private final DecisionEngineService decisionEngineService;
     private final UserRepository userRepository;
 
     public DecisionController(
             DecisionService decisionService,
             DecisionEngineService decisionEngineService,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            GeminiAiService geminiAiService) {
         this.decisionService = decisionService;
         this.decisionEngineService = decisionEngineService;
         this.userRepository = userRepository;
+        this.geminiAiService = geminiAiService;
     }
 
-    /**
-     * CORRECCIÓN CRÍTICA: Obtiene todas las decisiones del usuario autenticado.
-     * Este es el método que el Dashboard llama (GET /api/decisions).
-     */
     @GetMapping
     public ResponseEntity<List<Decision>> getAllDecisions(Principal principal) {
         try {
-            // Extraemos el email del token JWT a través del objeto Principal
             String email = principal.getName();
-            // Retornamos solo las decisiones que pertenecen a este email
             List<Decision> userDecisions = decisionService.getAllDecisionsForUser(email);
             return ResponseEntity.ok(userDecisions);
         } catch (Exception e) {
@@ -52,9 +50,6 @@ public class DecisionController {
         }
     }
 
-    /**
-     * Crea una nueva decisión vinculándola automáticamente al usuario logueado.
-     */
     @PostMapping
     public ResponseEntity<Decision> createDecision(@RequestBody Decision decision, Principal principal) {
         try {
@@ -81,29 +76,71 @@ public class DecisionController {
         return new ResponseEntity<>(savedOption, HttpStatus.CREATED);
     }
 
-    // En tu DecisionController.java
     @PostMapping("/{decisionId}/calculate")
     public ResponseEntity<RecommendationResponse> calculateDecision(
             @PathVariable UUID decisionId,
             @RequestBody MatrixRequest matrixRequest) {
 
-        // 1. Calculamos la mejor opción con el Motor TOPSIS
-        RecommendationResponse result = decisionEngineService.calculateBestOption(decisionId, matrixRequest);
+        // 1. Ejecutar TOPSIS
+        RecommendationResponse result
+                = decisionEngineService.calculateBestOption(
+                        decisionId,
+                        matrixRequest
+                );
 
-        // 2. Buscamos la decisión en la Base de Datos
+        // 2. Obtener la decisión
         Decision decision = decisionService.getDecisionById(decisionId)
-                .orElseThrow(() -> new RuntimeException("Decisión no encontrada"));
+                .orElseThrow(()
+                        -> new RuntimeException("Decisión no encontrada"));
 
-        // 3. 🚨 GUARDAMOS ABSOLUTAMENTE TODO EN LA BASE DE DATOS 🚨
-        decision.setEvaluationMatrix(convertMapKeysToStrings(matrixRequest.getScores()));
-        decision.setRecommendedOption(result.getRecommendedOption());
-        decision.setJustification(result.getJustification());
-        decision.setFinalScores(result.getFinalScores());
+        // 3. Obtener nombres de criterios para darle contexto a Gemini
+        List<String> criteriaNames = decision.getCriteria().stream()
+                .map(Criterion::getName)
+                .toList();
 
-        // 4. Actualizamos la BD
+        // 4. Generar justificación clásica
+        String justificacionIA
+                = geminiAiService.generateDecisionJustification(
+                        decision.getTitle(),
+                        result.getRecommendedOption().getName(),
+                        result.getFinalScores()
+                );
+
+        // 5. Generar recomendaciones estratégicas avanzadas
+        String recomendacionesEstrategicas
+                = geminiAiService.generateStrategicRecommendations(
+                        decision.getTitle(),
+                        result.getRecommendedOption().getName(),
+                        result.getFinalScores(),
+                        criteriaNames
+                );
+
+        // 6. Guardar información en la decisión
+        decision.setJustification(justificacionIA);
+
+        // NUEVO CAMPO
+        decision.setRecommendations(recomendacionesEstrategicas);
+
+        decision.setEvaluationMatrix(
+                convertMapKeysToStrings(
+                        matrixRequest.getScores()
+                )
+        );
+
+        decision.setRecommendedOption(
+                result.getRecommendedOption()
+        );
+
+        decision.setFinalScores(
+                result.getFinalScores()
+        );
+
+        // 7. Guardar en base de datos
         decisionService.updateDecision(decision);
 
-        // 5. Retornamos la respuesta al Frontend
+        // 8. Enviar al frontend
+        result.setJustification(justificacionIA);
+
         return ResponseEntity.ok(result);
     }
 

@@ -12,7 +12,14 @@ const resources = {
                 profile: "Mi Perfil",
                 admin: "Administración",
                 users: "Gestión de Usuarios",
+                settings: "Configuración",
                 logout: "Cerrar Sesión"
+            },
+            admin: {
+                dashboard: "Panel Principal",
+                users: "Gestión de Usuarios",
+                audit: "Auditoría Global",
+                settings: "Configuración SIATD"
             },
             common: {
                 welcome: "Bienvenido a SIATD",
@@ -29,7 +36,14 @@ const resources = {
                 profile: "My Profile",
                 admin: "Administration",
                 users: "User Management",
+                settings: "Settings",
                 logout: "Logout"
+            },
+            admin: {
+                dashboard: "Main Dashboard",
+                users: "User Management",
+                audit: "Global Audit",
+                settings: "SIATD Settings"
             },
             common: {
                 welcome: "Welcome to SIATD",

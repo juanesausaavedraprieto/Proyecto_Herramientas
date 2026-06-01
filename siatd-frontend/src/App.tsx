@@ -27,8 +27,10 @@ import { Results } from './features/decision-maker/Results';
 import { ContinueDecision } from './features/decision-maker/ContinueDecision';
 
 // Vistas Admin
-import { AdminDashboard } from './features/admin/AdminDashboard';// 👈 Asegúrate de tener este archivo creado
+import { AdminDashboard } from './features/admin/AdminDashboard';
 import { UserManagement } from './features/admin/UserManagement';
+import { GlobalAudit } from './features/admin/GlobalAudit';
+import { SystemSettings } from './features/admin/SystemSettings';
 
 function App() {
   // Leemos el rol del usuario desde el almacenamiento local al inicializar
@@ -73,6 +75,8 @@ function App() {
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<AdminDashboard />} />
               <Route path="users" element={<UserManagement />} />
+              <Route path="audit" element={<GlobalAudit />} />
+              <Route path="settings" element={<SystemSettings />} />
               {/* Aquí irán Monitoreo Global, Configuración IA, etc. */}
             </Route>
           ) : (

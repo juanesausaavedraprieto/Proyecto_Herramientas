@@ -1,5 +1,6 @@
 package com.example.siatd_backend.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
@@ -51,8 +52,8 @@ public class Decision {
 
     // ------------------------------------------
     @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
-    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    @JoinColumn(name = "user_id")
+    @JsonIgnoreProperties({"decisions", "password"}) 
     private User user;
 
     @Column(name = "stress_level")

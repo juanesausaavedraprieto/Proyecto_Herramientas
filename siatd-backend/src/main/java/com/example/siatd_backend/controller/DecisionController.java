@@ -178,4 +178,17 @@ public class DecisionController {
         }
         return newMap;
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteDecision(@PathVariable UUID id) {
+        decisionService.deleteDecision(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/clear-history")
+    public ResponseEntity<Void> clearHistory(Principal principal) {
+        String email = principal.getName();
+        decisionService.deleteAllDecisionsForUser(email);
+        return ResponseEntity.noContent().build();
+    }
 }

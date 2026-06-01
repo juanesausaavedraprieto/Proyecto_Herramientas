@@ -1,4 +1,3 @@
-// src/features/decision-maker/StartDecision.tsx
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDecisionStore } from '../../store/useDecisionStore';
@@ -21,7 +20,6 @@ export const StartDecision = () => {
         setError(null);
 
         try {
-            // 1. Enviamos el JSON a Spring Boot
             const response = await api.post('/decisions', {
                 title: title,
                 status: 'DRAFT',
@@ -29,10 +27,7 @@ export const StartDecision = () => {
                 options: []
             });
 
-            // 2. Guardamos la respuesta (con el ID de PostgreSQL) en nuestro estado global
             setDecision(response.data);
-
-            // 3. Avanzamos al siguiente paso
             navigate('/define-criteria');
 
         } catch (err) {
@@ -44,27 +39,27 @@ export const StartDecision = () => {
     };
 
     return (
-        <div className="max-w-2xl mx-auto mt-10">
-            <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+        <div className="max-w-2xl mx-auto mt-10 transition-colors duration-200">
+            <div className="bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 transition-colors duration-200">
                 <div className="flex items-center gap-4 mb-6">
-                    <div className="bg-blue-100 p-3 rounded-full text-blue-600">
+                    <div className="bg-blue-100 dark:bg-blue-500/20 p-3 rounded-full text-blue-600 dark:text-blue-400">
                         <Target className="w-8 h-8" />
                     </div>
                     <div>
-                        <h2 className="text-2xl font-bold text-slate-800">Definir el Problema</h2>
-                        <p className="text-slate-500">¿Qué decisión importante necesitas tomar hoy?</p>
+                        <h2 className="text-2xl font-bold text-slate-800 dark:text-white">Definir el Problema</h2>
+                        <p className="text-slate-500 dark:text-slate-400">¿Qué decisión importante necesitas tomar hoy?</p>
                     </div>
                 </div>
 
                 {error && (
-                    <div className="mb-4 p-4 bg-red-50 text-red-700 rounded-lg text-sm border border-red-100">
+                    <div className="mb-4 p-4 bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 rounded-lg text-sm border border-red-100 dark:border-red-500/20">
                         {error}
                     </div>
                 )}
 
                 <form onSubmit={handleStart} className="space-y-6">
                     <div>
-                        <label htmlFor="title" className="block text-sm font-medium text-slate-700 mb-2">
+                        <label htmlFor="title" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                             Pregunta o Dilema
                         </label>
                         <input
@@ -74,7 +69,7 @@ export const StartDecision = () => {
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                             disabled={isLoading}
-                            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all disabled:bg-gray-50 disabled:text-gray-400"
+                            className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 outline-none transition-all disabled:bg-gray-50 dark:disabled:bg-slate-800 disabled:text-gray-400 dark:disabled:text-slate-500"
                             autoFocus
                         />
                     </div>

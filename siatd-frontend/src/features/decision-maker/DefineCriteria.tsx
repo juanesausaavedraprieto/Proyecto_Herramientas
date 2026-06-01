@@ -18,10 +18,10 @@ export const DefineCriteria = () => {
     // Si el usuario recargó la página y se perdió la decisión, lo regresamos al inicio
     if (!currentDecision) {
         return (
-            <div className="text-center mt-20">
+            <div className="text-center mt-20 transition-colors duration-200">
                 <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-                <h2 className="text-xl font-bold text-slate-800">No hay una decisión activa</h2>
-                <button onClick={() => navigate('/new-decision')} className="mt-4 text-blue-600 underline">
+                <h2 className="text-xl font-bold text-slate-800 dark:text-white">No hay una decisión activa</h2>
+                <button onClick={() => navigate('/new-decision')} className="mt-4 text-blue-600 dark:text-blue-400 underline">
                     Volver al inicio
                 </button>
             </div>
@@ -59,35 +59,35 @@ export const DefineCriteria = () => {
     };
 
     return (
-        <div className="max-w-4xl mx-auto mt-6">
+        <div className="max-w-4xl mx-auto mt-6 transition-colors duration-200">
             <div className="mb-8">
-                <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
-                    <Scale className="w-7 h-7 text-blue-600" />
+                <h2 className="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-3">
+                    <Scale className="w-7 h-7 text-blue-600 dark:text-blue-400" />
                     Definir Criterios de Evaluación
                 </h2>
-                <p className="text-slate-500 mt-2">
-                    Decisión actual: <span className="font-semibold text-slate-700">{currentDecision.title}</span>
+                <p className="text-slate-500 dark:text-slate-400 mt-2">
+                    Decisión actual: <span className="font-semibold text-slate-700 dark:text-slate-300">{currentDecision.title}</span>
                 </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 {/* Formulario de ingreso */}
-                <div className="md:col-span-1 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-fit">
+                <div className="md:col-span-1 bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 h-fit transition-colors">
                     <form onSubmit={handleAdd} className="space-y-5">
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Nombre del Criterio</label>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nombre del Criterio</label>
                             <input
                                 type="text"
                                 placeholder="Ej: Salario, Distancia, Estrés..."
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                                className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 outline-none transition-colors"
                                 disabled={isLoading}
                             />
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                                 Importancia ({weight}/10)
                             </label>
                             <input
@@ -96,21 +96,21 @@ export const DefineCriteria = () => {
                                 max="10"
                                 value={weight}
                                 onChange={(e) => setWeight(Number(e.target.value))}
-                                className="w-full accent-blue-600"
+                                className="w-full accent-blue-600 dark:accent-blue-400"
                                 disabled={isLoading}
                             />
-                            <div className="flex justify-between text-xs text-slate-400 mt-1">
+                            <div className="flex justify-between text-xs text-slate-400 dark:text-slate-500 mt-1">
                                 <span>Poco</span>
                                 <span>Muy importante</span>
                             </div>
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Tipo de Impacto</label>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Tipo de Impacto</label>
                             <select
                                 value={isPositive ? 'true' : 'false'}
                                 onChange={(e) => setIsPositive(e.target.value === 'true')}
-                                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none"
+                                className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 outline-none transition-colors"
                                 disabled={isLoading}
                             >
                                 <option value="true">📈 Beneficio (Más es mejor)</option>
@@ -121,7 +121,7 @@ export const DefineCriteria = () => {
                         <button
                             type="submit"
                             disabled={!name.trim() || isLoading}
-                            className="w-full flex justify-center items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white font-semibold py-2.5 rounded-lg transition-colors disabled:opacity-50"
+                            className="w-full flex justify-center items-center gap-2 bg-slate-800 hover:bg-slate-900 dark:bg-blue-600 dark:hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition-colors disabled:opacity-50"
                         >
                             <Plus className="w-5 h-5" />
                             {isLoading ? 'Guardando...' : 'Agregar Criterio'}
@@ -130,25 +130,25 @@ export const DefineCriteria = () => {
                 </div>
 
                 {/* Lista de criterios agregados */}
-                <div className="md:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                    <h3 className="text-lg font-semibold text-slate-800 mb-4 border-b pb-2">Criterios Seleccionados</h3>
+                <div className="md:col-span-2 bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 transition-colors">
+                    <h3 className="text-lg font-semibold text-slate-800 dark:text-white mb-4 border-b border-gray-100 dark:border-slate-700 pb-2">Criterios Seleccionados</h3>
 
                     {currentDecision.criteria.length === 0 ? (
-                        <div className="text-center py-10 text-slate-400 border-2 border-dashed rounded-xl">
+                        <div className="text-center py-10 text-slate-400 dark:text-slate-500 border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-xl">
                             Aún no has agregado ningún criterio.
                         </div>
                     ) : (
                         <ul className="space-y-3">
                             {currentDecision.criteria.map((c) => (
-                                <li key={c.id} className="flex items-center justify-between p-4 rounded-xl bg-slate-50 border border-slate-100">
+                                <li key={c.id} className="flex items-center justify-between p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 transition-colors">
                                     <div>
-                                        <p className="font-medium text-slate-800">{c.name}</p>
-                                        <p className="text-sm text-slate-500">
+                                        <p className="font-medium text-slate-800 dark:text-slate-200">{c.name}</p>
+                                        <p className="text-sm text-slate-500 dark:text-slate-400">
                                             Peso: {c.weight * 10}/10 | {c.isPositive ? 'Beneficio 📈' : 'Costo 📉'}
                                         </p>
                                     </div>
                                     <button
-                                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                        className="p-2 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
                                         title="Eliminar (Próximamente)"
                                     >
                                         <Trash2 className="w-5 h-5" />
@@ -168,7 +168,7 @@ export const DefineCriteria = () => {
                         </button>
                     </div>
                     {currentDecision.criteria.length < 2 && (
-                        <p className="text-xs text-right text-slate-400 mt-2">Agrega al menos 2 criterios para continuar</p>
+                        <p className="text-xs text-right text-slate-400 dark:text-slate-500 mt-2">Agrega al menos 2 criterios para continuar</p>
                     )}
                 </div>
             </div>

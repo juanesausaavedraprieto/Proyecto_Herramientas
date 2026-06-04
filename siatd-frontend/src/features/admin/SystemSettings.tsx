@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Settings, Brain, Sliders, Save, Database, ShieldAlert, Loader2 } from 'lucide-react';
 import { api } from '../../api/axios';
+import { toast } from 'sonner'; // 👈 Importamos Sonner
 
 export const SystemSettings = () => {
     const [isSaving, setIsSaving] = useState(false);
@@ -22,6 +23,7 @@ export const SystemSettings = () => {
                 setSettings(response.data);
             } catch (error) {
                 console.error("Error al cargar configuraciones", error);
+                toast.error("No se pudo cargar la configuración actual."); // 👈 Toast
             } finally {
                 setIsLoading(false);
             }
@@ -45,10 +47,10 @@ export const SystemSettings = () => {
         setIsSaving(true);
         try {
             await api.put('/admin/settings', settings);
-            alert("✅ Configuración del motor actualizada en el servidor.");
+            toast.success("Configuración del motor actualizada en el servidor."); // 👈 Reemplazo de alert()
         } catch (error) {
             console.error("Error al guardar", error);
-            alert("❌ Hubo un error al guardar la configuración.");
+            toast.error("Hubo un error al guardar la configuración."); // 👈 Reemplazo de alert()
         } finally {
             setIsSaving(false);
         }
@@ -59,34 +61,37 @@ export const SystemSettings = () => {
         if (confirm("⚠️ ¿Estás seguro de eliminar todos los borradores? Esta acción no se puede deshacer.")) {
             try {
                 // Aquí llamarías a un endpoint: await api.delete('/admin/decisions/drafts');
-                alert("Borradores purgados exitosamente de la base de datos.");
+                toast.success("Borradores purgados exitosamente de la base de datos."); // 👈 Reemplazo de alert()
             } catch (error) {
                 console.error(error);
+                toast.error("Error al intentar purgar los borradores.");
             }
         }
     };
 
     if (isLoading) return (
-        <div className="flex flex-col items-center justify-center h-64">
-            <Loader2 className="w-10 h-10 animate-spin text-indigo-600" />
-            <p className="mt-4 text-slate-500 font-medium">Cargando hiperparámetros...</p>
+        <div className="flex flex-col items-center justify-center h-64 transition-colors duration-200">
+            <Loader2 className="w-10 h-10 animate-spin text-indigo-600 dark:text-indigo-400" />
+            <p className="mt-4 text-slate-500 dark:text-slate-400 font-medium">Cargando hiperparámetros...</p>
         </div>
     );
 
     return (
-        <div className="max-w-5xl mx-auto animate-in fade-in duration-500 mb-20">
+        <div className="max-w-5xl mx-auto animate-in fade-in duration-500 mb-20 transition-colors duration-200">
             <div className="flex justify-between items-end mb-8">
                 <div className="flex items-center gap-3">
-                    <div className="bg-slate-800 p-3 rounded-2xl text-white"><Settings className="w-8 h-8" /></div>
+                    <div className="bg-slate-800 dark:bg-indigo-500/20 p-3 rounded-2xl text-white dark:text-indigo-400 transition-colors">
+                        <Settings className="w-8 h-8" />
+                    </div>
                     <div>
-                        <h1 className="text-3xl font-black text-slate-800 tracking-tight">Configuración del Sistema</h1>
-                        <p className="text-slate-500 mt-1">Ajusta los hiperparámetros del motor de inferencia y reglas de IA.</p>
+                        <h1 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">Configuración del Sistema</h1>
+                        <p className="text-slate-500 dark:text-slate-400 mt-1">Ajusta los hiperparámetros del motor de inferencia y reglas de IA.</p>
                     </div>
                 </div>
                 <button
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg shadow-indigo-200 disabled:opacity-70"
+                    className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg shadow-indigo-200 dark:shadow-none disabled:opacity-70"
                 >
                     {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
                     {isSaving ? 'Guardando...' : 'Guardar Cambios'}
@@ -96,16 +101,16 @@ export const SystemSettings = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Columna Izquierda */}
                 <div className="lg:col-span-2 space-y-6">
-                    <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm">
-                        <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2 mb-6">
-                            <Sliders className="w-5 h-5 text-indigo-500" /> Parámetros TOPSIS
+                    <div className="bg-white dark:bg-slate-800 p-8 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm transition-colors">
+                        <h2 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2 mb-6">
+                            <Sliders className="w-5 h-5 text-indigo-500 dark:text-indigo-400" /> Parámetros TOPSIS
                         </h2>
 
                         <div className="space-y-6">
                             <div>
-                                <label className="flex justify-between text-sm font-bold text-slate-600 mb-2">
+                                <label className="flex justify-between text-sm font-bold text-slate-600 dark:text-slate-300 mb-2">
                                     <span>Umbral de Confianza Mínimo</span>
-                                    <span className="text-indigo-600">{settings.topsisThreshold}%</span>
+                                    <span className="text-indigo-600 dark:text-indigo-400">{settings.topsisThreshold}%</span>
                                 </label>
                                 <input
                                     type="range"
@@ -113,16 +118,16 @@ export const SystemSettings = () => {
                                     min="50" max="100"
                                     value={settings.topsisThreshold}
                                     onChange={handleChange}
-                                    className="w-full accent-indigo-600"
+                                    className="w-full accent-indigo-600 dark:accent-indigo-500"
                                 />
                             </div>
 
-                            <hr className="border-slate-100" />
+                            <hr className="border-slate-100 dark:border-slate-700" />
 
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <h4 className="font-bold text-slate-700">Normalización Vectorial Estricta</h4>
-                                    <p className="text-xs text-slate-500">Aplica raíz cuadrada sumatoria en matrices.</p>
+                                    <h4 className="font-bold text-slate-700 dark:text-slate-200">Normalización Vectorial Estricta</h4>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">Aplica raíz cuadrada sumatoria en matrices.</p>
                                 </div>
                                 <label className="relative inline-flex items-center cursor-pointer">
                                     <input
@@ -132,13 +137,14 @@ export const SystemSettings = () => {
                                         onChange={handleChange}
                                         className="sr-only peer"
                                     />
-                                    <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                                    <div className="w-11 h-6 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 dark:after:border-slate-500 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600 dark:peer-checked:bg-indigo-500"></div>
                                 </label>
                             </div>
                         </div>
                     </div>
 
-                    <div className="bg-gradient-to-br from-slate-900 to-indigo-950 p-8 rounded-3xl shadow-xl text-white">
+                    {/* Tarjeta de IA (Ya era oscura, pero la mejoramos para que contraste mejor en modo claro/oscuro) */}
+                    <div className="bg-gradient-to-br from-slate-900 to-indigo-950 dark:from-slate-950 dark:to-slate-900 p-8 rounded-3xl shadow-xl text-white transition-colors">
                         <h2 className="text-xl font-bold flex items-center gap-2 mb-6 text-indigo-200">
                             <Brain className="w-5 h-5" /> Reglas de Inteligencia Artificial
                         </h2>
@@ -149,7 +155,7 @@ export const SystemSettings = () => {
                                     name="aiSystemPrompt"
                                     value={settings.aiSystemPrompt}
                                     onChange={handleChange}
-                                    className="w-full bg-slate-800/50 border border-slate-700 rounded-xl p-4 text-sm text-slate-300 outline-none focus:border-indigo-500 h-32 resize-none"
+                                    className="w-full bg-slate-800/50 dark:bg-slate-900/50 border border-slate-700 dark:border-slate-600 rounded-xl p-4 text-sm text-slate-300 outline-none focus:border-indigo-500 h-32 resize-none transition-colors"
                                 />
                             </div>
                             <div>
@@ -158,7 +164,7 @@ export const SystemSettings = () => {
                                     name="aiModel"
                                     value={settings.aiModel}
                                     onChange={handleChange}
-                                    className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-slate-300 outline-none"
+                                    className="w-full bg-slate-800 dark:bg-slate-900 border border-slate-700 dark:border-slate-600 rounded-xl p-3 text-slate-300 outline-none transition-colors cursor-pointer"
                                 >
                                     <option value="Gemini 2.5 Flash">Gemini 2.5 Flash (Activo)</option>
                                     <option value="Gemini Pro">Gemini Pro</option>
@@ -170,25 +176,25 @@ export const SystemSettings = () => {
 
                 {/* Columna Derecha */}
                 <div className="space-y-6">
-                    <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-                        <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-4">
-                            <Database className="w-5 h-5 text-slate-400" /> Mantenimiento
+                    <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm transition-colors">
+                        <h3 className="font-bold text-slate-800 dark:text-white flex items-center gap-2 mb-4">
+                            <Database className="w-5 h-5 text-slate-400 dark:text-slate-500" /> Mantenimiento
                         </h3>
                         <div className="space-y-3">
-                            <button className="w-full py-2.5 px-4 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl text-sm font-bold border border-slate-200 transition-colors">
+                            <button className="w-full py-2.5 px-4 bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-bold border border-slate-200 dark:border-slate-600 transition-colors">
                                 Exportar Logs de Decisiones (CSV)
                             </button>
                         </div>
                     </div>
 
-                    <div className="bg-red-50 p-6 rounded-3xl border border-red-100">
-                        <h3 className="font-bold text-red-800 flex items-center gap-2 mb-2">
-                            <ShieldAlert className="w-5 h-5 text-red-600" /> Zona de Peligro
+                    <div className="bg-red-50 dark:bg-red-500/10 p-6 rounded-3xl border border-red-100 dark:border-red-500/20 transition-colors">
+                        <h3 className="font-bold text-red-800 dark:text-red-400 flex items-center gap-2 mb-2">
+                            <ShieldAlert className="w-5 h-5 text-red-600 dark:text-red-500" /> Zona de Peligro
                         </h3>
-                        <p className="text-xs text-red-600 mb-4">Estas acciones afectarán a todos los usuarios del sistema de forma irreversible.</p>
+                        <p className="text-xs text-red-600 dark:text-red-400/80 mb-4">Estas acciones afectarán a todos los usuarios del sistema de forma irreversible.</p>
                         <button
                             onClick={handlePurgeDrafts}
-                            className="w-full py-3 px-4 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-bold shadow-lg shadow-red-200 transition-colors"
+                            className="w-full py-3 px-4 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-bold shadow-lg shadow-red-200 dark:shadow-none transition-colors"
                         >
                             Purgar Decisiones Borrador
                         </button>

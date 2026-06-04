@@ -1,10 +1,12 @@
 // src/features/auth/Login.tsx
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { api } from '../../api/axios';
-import { Link } from 'react-router-dom'; // 👈 Eliminamos useNavigate
-import { Brain, Lock, Mail, ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Brain, Lock, Mail, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { toast } from 'sonner';
 
 // Definimos el esquema de validación estricto
 const loginSchema = z.object({
@@ -15,6 +17,8 @@ const loginSchema = z.object({
 type LoginForm = z.infer<typeof loginSchema>;
 
 export const Login = () => {
+    const [showPassword, setShowPassword] = useState(false);
+
     const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginForm>({
         resolver: zodResolver(loginSchema),
     });
@@ -30,29 +34,66 @@ export const Login = () => {
 
             const { token, name, email, role } = response.data;
 
-            if (token) {
-                // 1. 🚨 LIMPIAMOS BASURA DE SESIONES ANTERIORES
-                localStorage.clear();
+            // Verificamos si el backend respondió OK pero no mandó token
+            if (!token) {
+                toast.error("Credenciales incorrectas. Verifica tu correo y contraseña.");
+                return;
+            }
 
-                // 2. Guardar datos reales del usuario
-                localStorage.setItem('token', token);
-                localStorage.setItem('userName', name || 'Usuario');
-                localStorage.setItem('userEmail', email || data.email);
-                localStorage.setItem('userRole', role || 'USER');
+            // 1. 🚨 LIMPIAMOS BASURA DE SESIONES ANTERIORES
+            localStorage.clear();
 
-                console.log("✅ Datos de sesión guardados correctamente");
+            // 2. Guardar datos reales del usuario
+            localStorage.setItem('token', token);
+            localStorage.setItem('userName', name || 'Usuario');
+            localStorage.setItem('userEmail', email || data.email);
+            localStorage.setItem('userRole', role || 'USER');
 
-                // 3. 🚨 EL HARD RESET: Redirigimos destruyendo la memoria anterior
+            console.log("✅ Datos de sesión guardados correctamente");
+
+            toast.success("¡Bienvenido! Iniciando sesión...");
+
+            // 3. 🚨 EL HARD RESET: Redirigimos destruyendo la memoria anterior
+            setTimeout(() => {
                 if (role === 'ADMIN') {
                     window.location.replace('/admin');
                 } else {
                     window.location.replace('/');
                 }
+            }, 800);
+
+        } catch (err: any) {
+            console.error("❌ Error atrapado en login:", err);
+
+            // 1. Error de Red (Servidor caído o CORS)
+            if (err.code === 'ERR_NETWORK') {
+                toast.error("Error de conexión. Verifica que el servidor esté encendido.");
+                return;
             }
-        } catch (err) {
-            console.error("Error en login:", err);
-            alert("Credenciales inválidas. Verifica tu correo y contraseña.");
+
+            // 2. Error HTTP (401, 403, 404, etc.)
+            if (err.response) {
+                const status = err.response.status;
+                const backendData = err.response.data;
+
+                if (status === 401 || status === 403) {
+                    toast.error("Correo o contraseña incorrectos.");
+                } else if (typeof backendData === 'string') {
+                    toast.error(backendData); // Si Spring Boot mandó un texto plano
+                } else if (backendData?.message || backendData?.error) {
+                    toast.error(backendData.message || backendData.error); // Si mandó JSON
+                } else {
+                    toast.error("Ocurrió un error al intentar iniciar sesión.");
+                }
+            } else {
+                toast.error("Error desconocido al validar tus datos.");
+            }
         }
+    };
+
+    // Opcional: Si quieres que avise también cuando el formulario tiene errores de validación
+    const onError = () => {
+        toast.warning("Por favor, completa los campos correctamente.");
     };
 
     return (
@@ -67,7 +108,8 @@ export const Login = () => {
                 </div>
 
                 <div className="p-8">
-                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+                    {/* Le pasamos onError a handleSubmit */}
+                    <form onSubmit={handleSubmit(onSubmit, onError)} className="space-y-5">
                         <div>
                             <label className="block text-sm font-medium text-slate-700 mb-1">Correo Electrónico</label>
                             <div className="relative">
@@ -88,10 +130,17 @@ export const Login = () => {
                                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                                 <input
                                     {...register('password')}
-                                    type="password"
-                                    className={`w-full pl-10 pr-4 py-3 rounded-xl border outline-none transition-all ${errors.password ? 'border-red-400 focus:ring-red-500' : 'border-gray-200 focus:ring-blue-500 focus:border-blue-500'}`}
+                                    type={showPassword ? "text" : "password"}
+                                    className={`w-full pl-10 pr-12 py-3 rounded-xl border outline-none transition-all ${errors.password ? 'border-red-400 focus:ring-red-500' : 'border-gray-200 focus:ring-blue-500 focus:border-blue-500'}`}
                                     placeholder="••••••••"
                                 />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors focus:outline-none"
+                                >
+                                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                </button>
                             </div>
                             {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
                         </div>
@@ -99,7 +148,7 @@ export const Login = () => {
                         <button
                             type="submit"
                             disabled={isSubmitting}
-                            className="w-full flex justify-center items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl transition-all disabled:opacity-70 mt-6"
+                            className="w-full flex justify-center items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl transition-all disabled:opacity-70 mt-6 shadow-lg shadow-blue-200"
                         >
                             {isSubmitting ? 'Iniciando sesión...' : 'Ingresar al Sistema'}
                             {!isSubmitting && <ArrowRight className="w-5 h-5" />}

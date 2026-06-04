@@ -1,11 +1,12 @@
 // src/App.tsx
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'sonner'; // 👈 1. Importas Sonner aquí
 
 // Layouts & Wrappers
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import { GuestRoute } from './components/layout/GuestRoute';
 import { MainLayout } from './components/layout/MainLayout';
-import { AdminLayout } from './components/layout/AdminLayout';// 👈 Layout del Admin
+import { AdminLayout } from './components/layout/AdminLayout';
 
 // Auth y Errores
 import { Login } from './features/auth/Login';
@@ -38,6 +39,9 @@ function App() {
 
   return (
     <BrowserRouter>
+      {/* 👈 2. Colocas el Toaster de forma global aquí */}
+      <Toaster richColors position="top-right" />
+
       <Routes>
 
         {/* RUTAS DE INVITADO (Login / Registro) */}
@@ -57,16 +61,15 @@ function App() {
               <Route path="history" element={<History />} />
               <Route path="settings" element={<Settings />} />
 
-              {/* Flujo de Decisiones (Prohibido para Admin) */}
+              {/* Flujo de Decisiones */}
               <Route path="new-decision" element={<StartDecision />} />
               <Route path="define-criteria" element={<DefineCriteria />} />
               <Route path="define-options" element={<DefineOptions />} />
               <Route path="evaluation-matrix" element={<EvaluationMatrix />} />
-              <Route path="results/:id?" element={<Results />} /> {/* :id? hace que el parámetro sea opcional */}
+              <Route path="results/:id?" element={<Results />} />
               <Route path="continue/:id" element={<ContinueDecision />} />
             </Route>
           ) : (
-            // Si es Admin y trata de ir a la raíz del cliente, lo redirigimos a su panel de administración
             <Route path="/" element={<Navigate to="/admin" replace />} />
           )}
 
@@ -77,10 +80,8 @@ function App() {
               <Route path="users" element={<UserManagement />} />
               <Route path="audit" element={<GlobalAudit />} />
               <Route path="settings" element={<SystemSettings />} />
-              {/* Aquí irán Monitoreo Global, Configuración IA, etc. */}
             </Route>
           ) : (
-            // Si es Cliente y trata de ir a rutas de /admin, lo redirigimos a su dashboard
             <Route path="/admin/*" element={<Navigate to="/" replace />} />
           )}
 

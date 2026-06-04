@@ -2,13 +2,15 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDecisionStore } from '../../store/useDecisionStore';
-import { Calculator, ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
+import { Calculator, ArrowRight, AlertCircle, Loader2, Sparkles } from 'lucide-react';
 import { api } from '../../api/axios';
+import { toast } from 'sonner'; // 👈 Importamos Sonner
 
 export const EvaluationMatrix = () => {
     const { currentDecision, updateScore, setRecommendation } = useDecisionStore();
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
+    const [isAiLoading, setIsAiLoading] = useState(false); // 👈 Estado exclusivo para la IA
 
     if (!currentDecision || currentDecision.criteria.length === 0 || currentDecision.options.length === 0) {
         return (
@@ -20,24 +22,108 @@ export const EvaluationMatrix = () => {
         );
     }
 
-    // Manejar el cambio de un puntaje en la matriz
+    // Manejar el cambio de un puntaje manual en la matriz
     const handleScoreChange = (optionId: string, criterionId: string, value: number) => {
-        updateScore(optionId, criterionId, value);
+        // Validación de seguridad para que no pongan más de 10 o menos de 1
+        const safeValue = Math.max(1, Math.min(10, value));
+        updateScore(optionId, criterionId, safeValue);
     };
 
+    // 🪄 NUEVO: Función súper robusta y tolerante a errores ortográficos de la IA
+    const handleAiAutocomplete = async () => {
+        if (!currentDecision) return;
+        setIsAiLoading(true);
+        toast.info("La IA está analizando tu dilema...", { duration: 3000 });
+
+        try {
+            const response = await api.post(`/decisions/${currentDecision.id}/auto-evaluate`);
+
+            let rawData = response.data;
+            let aiEvaluations: any = [];
+
+            if (typeof rawData === 'string') {
+                const cleanString = rawData.replace(/```json/gi, '').replace(/```/g, '').trim();
+                aiEvaluations = JSON.parse(cleanString);
+            } else {
+                aiEvaluations = rawData;
+            }
+
+            if (!Array.isArray(aiEvaluations)) {
+                const hiddenArray = Object.values(aiEvaluations).find(val => Array.isArray(val));
+                if (hiddenArray) {
+                    aiEvaluations = hiddenArray;
+                } else {
+                    aiEvaluations = [aiEvaluations];
+                }
+            }
+
+            if (!Array.isArray(aiEvaluations) || aiEvaluations.length === 0) {
+                throw new Error("El formato devuelto no contiene evaluaciones.");
+            }
+
+            // 🛠️ Función destructora de tildes, mayúsculas y espacios
+            const normalizeText = (text: string) => {
+                if (!text) return "";
+                return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+            };
+
+            let matchCount = 0;
+
+            // 👁️ Imprimimos en consola lo que dijo la IA por si quieres curiosear (F12)
+            console.log("Respuesta cruda de la IA:", aiEvaluations);
+
+            aiEvaluations.forEach((evalData: any) => {
+                // 1. Atrapamos variaciones de llaves que la IA pueda inventar
+                const rawOpcion = evalData.opcion || evalData.Opcion || evalData.Option || evalData["opción"];
+                const rawCriterio = evalData.criterio || evalData.Criterio || evalData.Criterion || evalData["criterio"];
+                const rawPuntaje = evalData.puntaje || evalData.Puntaje || evalData.score || evalData.value;
+
+                if (!rawOpcion || !rawCriterio || rawPuntaje === undefined) return;
+
+                // 2. Normalizamos la respuesta de la IA
+                const normalizedOpcion = normalizeText(String(rawOpcion));
+                const normalizedCriterio = normalizeText(String(rawCriterio));
+
+                // 3. Normalizamos lo que tú escribiste en la app y comparamos
+                const matchedOption = currentDecision.options.find(
+                    o => normalizeText(o.name) === normalizedOpcion
+                );
+                const matchedCriterion = currentDecision.criteria.find(
+                    c => normalizeText(c.name) === normalizedCriterio
+                );
+
+                if (matchedOption && matchedCriterion) {
+                    // Nos aseguramos de que el puntaje sea un número válido
+                    updateScore(matchedOption.id, matchedCriterion.id, Number(rawPuntaje));
+                    matchCount++;
+                }
+            });
+
+            if (matchCount > 0) {
+                toast.success(`¡Matriz autocompletada con éxito! (${matchCount} valores)`);
+            } else {
+                toast.warning("La IA respondió, pero no coincidieron los nombres. Abre la consola (F12) para ver qué devolvió.");
+            }
+
+        } catch (error) {
+            console.error("Error en autocompletado de IA:", error);
+            toast.error("La IA falló al generar la matriz. Intenta de nuevo.");
+        } finally {
+            setIsAiLoading(false);
+        }
+    };
     // Enviar los puntajes finales al backend para que calcule el ganador
     const handleCalculate = async () => {
         if (!currentDecision) return;
         setIsLoading(true);
 
         try {
-            // 1. Armar el objeto (Map<UUID, Map<UUID, Double>>) para Spring Boot
+            // 1. Armar el objeto para Spring Boot
             const matrixPayload: Record<string, Record<string, number>> = {};
 
             currentDecision.options.forEach(option => {
                 matrixPayload[option.id] = {};
                 currentDecision.criteria.forEach(criterion => {
-                    // Si el usuario no movió el input, por defecto es 5
                     matrixPayload[option.id][criterion.id] = option.scores?.[criterion.id] || 5;
                 });
             });
@@ -50,10 +136,11 @@ export const EvaluationMatrix = () => {
             // 3. Guardar el resultado y avanzar
             setRecommendation(response.data);
             navigate('/results');
+            toast.success("¡Análisis TOPSIS completado!"); // 👈 Usamos toast
 
         } catch (error) {
             console.error("Error al calcular:", error);
-            alert("Hubo un error al procesar el modelo matemático.");
+            toast.error("Hubo un error al procesar el modelo matemático."); // 👈 Usamos toast
         } finally {
             setIsLoading(false);
         }
@@ -61,7 +148,7 @@ export const EvaluationMatrix = () => {
 
     return (
         <div className="max-w-5xl mx-auto mt-6 transition-colors duration-200">
-            <div className="mb-8 flex items-center justify-between">
+            <div className="mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
                     <h2 className="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-3">
                         <Calculator className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
@@ -71,14 +158,29 @@ export const EvaluationMatrix = () => {
                         Califica del 1 al 10 qué tan buena es cada opción respecto a cada criterio.
                     </p>
                 </div>
-                <button
-                    onClick={handleCalculate}
-                    disabled={isLoading}
-                    className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors disabled:opacity-50"
-                >
-                    {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Calcular Mejor Decisión'}
-                    <ArrowRight className="w-5 h-5" />
-                </button>
+
+                {/* 🪄 Botones de Acción Agrupados */}
+                <div className="flex items-center gap-3 w-full md:w-auto">
+                    <button
+                        onClick={handleAiAutocomplete}
+                        disabled={isLoading || isAiLoading}
+                        className="flex items-center justify-center gap-2 bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-500/20 dark:hover:bg-indigo-500/30 text-indigo-700 dark:text-indigo-300 font-bold py-3 px-4 rounded-lg transition-colors disabled:opacity-50 flex-1 md:flex-none border border-indigo-200 dark:border-indigo-500/30"
+                        title="Dejar que la Inteligencia Artificial puntúe por ti"
+                    >
+                        {isAiLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+                        <span className="hidden sm:inline">{isAiLoading ? 'Analizando...' : 'Auto-Evaluar con IA'}</span>
+                        <span className="sm:hidden">IA</span>
+                    </button>
+
+                    <button
+                        onClick={handleCalculate}
+                        disabled={isLoading || isAiLoading}
+                        className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors disabled:opacity-50 flex-1 md:flex-none shadow-lg shadow-emerald-200 dark:shadow-none"
+                    >
+                        {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Calcular Mejor Decisión'}
+                        <ArrowRight className="w-5 h-5 hidden sm:inline" />
+                    </button>
+                </div>
             </div>
 
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden transition-colors">
@@ -108,18 +210,20 @@ export const EvaluationMatrix = () => {
                                         {option.name}
                                     </td>
                                     {currentDecision.criteria.map((criterion) => {
-                                        // Buscamos si ya existe un valor, si no, empezamos en 5
                                         const score = option.scores?.[criterion.id] || 5;
 
                                         return (
-                                            <td key={criterion.id} className="p-4 border-r border-gray-200 dark:border-slate-700 text-center">
+                                            <td key={criterion.id} className="p-4 border-r border-gray-200 dark:border-slate-700 text-center relative group">
                                                 <input
                                                     type="number"
                                                     min="1"
                                                     max="10"
                                                     value={score}
                                                     onChange={(e) => handleScoreChange(option.id, criterion.id, Number(e.target.value))}
-                                                    className="w-20 px-2 py-2 text-center rounded-lg border border-gray-300 dark:border-slate-600 focus:ring-2 focus:ring-emerald-500 dark:focus:ring-emerald-400 outline-none font-semibold text-slate-700 dark:text-white bg-white dark:bg-slate-900 transition-colors"
+                                                    className={`w-20 px-2 py-2 text-center rounded-lg border outline-none font-semibold transition-all duration-300 ${isAiLoading
+                                                            ? 'bg-indigo-50 border-indigo-200 text-indigo-400 animate-pulse'
+                                                            : 'bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-600 text-slate-700 dark:text-white focus:ring-2 focus:ring-emerald-500'
+                                                        }`}
                                                 />
                                             </td>
                                         );

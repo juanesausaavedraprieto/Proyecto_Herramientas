@@ -3,6 +3,7 @@ import { api } from '../../api/axios';
 import type { Decision } from '../../types';
 import { Calendar, ChevronRight, Search, Trash2, Filter, AlertOctagon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner'; // 👈 Importamos Sonner
 
 export const History = () => {
     const [decisions, setDecisions] = useState<Decision[]>([]);
@@ -26,28 +27,31 @@ export const History = () => {
         fetchHistory();
     }, []);
 
-    // 🔴 Borrar una decisión
+    // 🔴 Borrar una decisión con Toast
     const handleDeleteSingle = async (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
         if (confirm("¿Estás seguro de eliminar esta decisión?")) {
             try {
                 await api.delete(`/decisions/${id}`);
                 setDecisions(decisions.filter(d => d.id !== id));
+                toast.success("Decisión eliminada con éxito"); // 👈 Toast de éxito
             } catch (error) {
                 console.error("Error al eliminar", error);
+                toast.error("No se pudo eliminar la decisión"); // 👈 Toast de error
             }
         }
     };
 
-    // 🔴 Vaciar todo el historial
+    // 🔴 Vaciar todo el historial con Toast
     const handleClearHistory = async () => {
         if (confirm("⚠️ ADVERTENCIA: ¿Estás seguro de que deseas vaciar TODO tu historial? Esta acción no se puede deshacer.")) {
             try {
                 await api.delete('/decisions/clear-history');
                 setDecisions([]);
+                toast.success("Historial vaciado correctamente"); // 👈 Toast de éxito
             } catch (error) {
                 console.error("Error al vaciar historial", error);
-                alert("Hubo un error al vaciar el historial.");
+                toast.error("Hubo un error al vaciar el historial"); // 👈 Reemplazo de alert()
             }
         }
     };
@@ -148,7 +152,7 @@ export const History = () => {
                                 </div>
 
                                 <div className="flex items-center gap-4">
-                                    <span className={`text-[10px] uppercase tracking-widest font-bold px-3 py-1 rounded-full ${isCompleted ? 'bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' : 'bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400'}`}>
+                                    <span className={`text-[10px] uppercase tracking-widest font-bold px-3 py-1 rounded-full transition-colors ${isCompleted ? 'bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' : 'bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400'}`}>
                                         {isCompleted ? 'Finalizado' : 'Borrador'}
                                     </span>
 

@@ -10,12 +10,14 @@ import com.example.siatd_backend.repository.UserRepository;
 import com.example.siatd_backend.service.DecisionEngineService;
 import com.example.siatd_backend.service.DecisionService;
 import com.example.siatd_backend.service.GeminiAiService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -24,7 +26,7 @@ import java.util.UUID;
 public class DecisionController {
 
     private final DecisionService decisionService;
-    private final GeminiAiService geminiAiService; // 🚨 El servicio de IA está inyectado
+    private final GeminiAiService geminiAiService;
     private final DecisionEngineService decisionEngineService;
     private final UserRepository userRepository;
 
@@ -68,12 +70,45 @@ public class DecisionController {
     }
 
     @PostMapping("/{decisionId}/options")
-    public ResponseEntity<Option> addOption(
-            @PathVariable UUID decisionId,
-            @RequestBody Option option) {
-
+    public ResponseEntity<Option> addOption(@PathVariable UUID decisionId, @RequestBody Option option) {
         Option savedOption = decisionService.addOption(decisionId, option);
         return new ResponseEntity<>(savedOption, HttpStatus.CREATED);
+    }
+
+    @PostMapping("/{decisionId}/criteria")
+    public ResponseEntity<Criterion> addCriterion(@PathVariable UUID decisionId, @RequestBody Criterion criterion) {
+        Criterion savedCriterion = decisionService.addCriterion(decisionId, criterion);
+        return new ResponseEntity<>(savedCriterion, HttpStatus.CREATED);
+    }
+
+    // 🪄 NUEVO ENDPOINT CORREGIDO: Autoevaluar con Inteligencia Artificial
+    @PostMapping("/{decisionId}/auto-evaluate")
+    public ResponseEntity<?> autoEvaluateMatrix(@PathVariable UUID decisionId) {
+        try {
+            Decision decision = decisionService.getDecisionById(decisionId)
+                    .orElseThrow(() -> new RuntimeException("Decisión no encontrada"));
+
+            // 1. Pedimos a Gemini el JSON evaluado (en formato String puro)
+            String aiJsonString = geminiAiService.autoEvaluateMatrix(decision);
+
+            // 2. Usamos Jackson para convertir ese String en una Lista Real de Java
+            ObjectMapper mapper = new ObjectMapper();
+
+            // 🚨 EL SECRETO ESTÁ AQUÍ: Lo forzamos a ser una Lista de Mapas, no un JsonNode genérico
+            java.util.List<java.util.Map<String, Object>> evaluationList = mapper.readValue(
+                    aiJsonString,
+                    new com.fasterxml.jackson.core.type.TypeReference<java.util.List<java.util.Map<String, Object>>>() {
+            }
+            );
+
+            // 3. Devolvemos la lista nativa al frontend
+            return ResponseEntity.ok(evaluationList);
+
+        } catch (Exception e) {
+            System.err.println("Error en autoevaluación: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(java.util.Map.of("error", "La IA no pudo procesar la matriz correctamente."));
+        }
     }
 
     @PostMapping("/{decisionId}/calculate")
@@ -81,66 +116,28 @@ public class DecisionController {
             @PathVariable UUID decisionId,
             @RequestBody MatrixRequest matrixRequest) {
 
-        // 1. Ejecutar TOPSIS
-        RecommendationResponse result
-                = decisionEngineService.calculateBestOption(
-                        decisionId,
-                        matrixRequest
-                );
+        RecommendationResponse result = decisionEngineService.calculateBestOption(decisionId, matrixRequest);
 
-        // 2. Obtener la decisión
         Decision decision = decisionService.getDecisionById(decisionId)
-                .orElseThrow(()
-                        -> new RuntimeException("Decisión no encontrada"));
+                .orElseThrow(() -> new RuntimeException("Decisión no encontrada"));
 
-        // 3. Obtener nombres de criterios para darle contexto a Gemini
-        List<String> criteriaNames = decision.getCriteria().stream()
-                .map(Criterion::getName)
-                .toList();
+        List<String> criteriaNames = decision.getCriteria().stream().map(Criterion::getName).toList();
 
-        // 4. Generar justificación clásica
-        String justificacionIA
-                = geminiAiService.generateDecisionJustification(
-                        decision.getTitle(),
-                        result.getRecommendedOption().getName(),
-                        result.getFinalScores()
-                );
+        String justificacionIA = geminiAiService.generateDecisionJustification(
+                decision.getTitle(), result.getRecommendedOption().getName(), result.getFinalScores());
 
-        // 5. Generar recomendaciones estratégicas avanzadas
-        String recomendacionesEstrategicas
-                = geminiAiService.generateStrategicRecommendations(
-                        decision.getTitle(),
-                        result.getRecommendedOption().getName(),
-                        result.getFinalScores(),
-                        criteriaNames
-                );
+        String recomendacionesEstrategicas = geminiAiService.generateStrategicRecommendations(
+                decision.getTitle(), result.getRecommendedOption().getName(), result.getFinalScores(), criteriaNames);
 
-        // 6. Guardar información en la decisión
         decision.setJustification(justificacionIA);
-
-        // NUEVO CAMPO
         decision.setRecommendations(recomendacionesEstrategicas);
+        decision.setEvaluationMatrix(convertMapKeysToStrings(matrixRequest.getScores()));
+        decision.setRecommendedOption(result.getRecommendedOption());
+        decision.setFinalScores(result.getFinalScores());
 
-        decision.setEvaluationMatrix(
-                convertMapKeysToStrings(
-                        matrixRequest.getScores()
-                )
-        );
-
-        decision.setRecommendedOption(
-                result.getRecommendedOption()
-        );
-
-        decision.setFinalScores(
-                result.getFinalScores()
-        );
-
-        // 7. Guardar en base de datos
         decisionService.updateDecision(decision);
 
-        // 8. Enviar al frontend
         result.setJustification(justificacionIA);
-
         return ResponseEntity.ok(result);
     }
 
@@ -151,20 +148,9 @@ public class DecisionController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PostMapping("/{decisionId}/criteria")
-    public ResponseEntity<Criterion> addCriterion(
-            @PathVariable UUID decisionId,
-            @RequestBody Criterion criterion) {
-
-        Criterion savedCriterion = decisionService.addCriterion(decisionId, criterion);
-        return new ResponseEntity<>(savedCriterion, HttpStatus.CREATED);
-    }
-
     private java.util.Map<String, java.util.Map<String, Double>> convertMapKeysToStrings(
             java.util.Map<UUID, java.util.Map<UUID, Double>> originalMap) {
-
         java.util.Map<String, java.util.Map<String, Double>> newMap = new java.util.HashMap<>();
-
         if (originalMap == null) {
             return newMap;
         }

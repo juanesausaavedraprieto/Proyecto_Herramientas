@@ -1,38 +1,41 @@
 import { Sliders } from 'lucide-react';
 
-interface SensitivityPanelProps {
-    criteria: { id: string; name: string; weight: number }[];
-    onWeightChange: (id: string, newWeight: number) => void;
+interface SensitivityProps {
+    criteria: any[];
+    onWeightChange: (id: string, weight: number) => void;
 }
 
-export const SensitivityPanel = ({ criteria, onWeightChange }: SensitivityPanelProps) => {
+export const SensitivityPanel = ({ criteria, onWeightChange }: SensitivityProps) => {
     return (
-        <div className="bg-slate-900 rounded-3xl p-8 text-white shadow-xl">
+        <div className="bg-slate-50 dark:bg-slate-900/50 p-6 rounded-3xl border border-slate-100 dark:border-slate-800 transition-colors">
             <div className="flex items-center gap-3 mb-6">
-                <div className="bg-blue-500/20 p-2 rounded-xl text-blue-400">
-                    <Sliders className="w-6 h-6" />
+                <div className="bg-blue-100 dark:bg-blue-500/20 p-2 rounded-xl">
+                    <Sliders className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
-                    <h3 className="text-xl font-bold">Análisis de Sensibilidad</h3>
-                    <p className="text-sm text-slate-400">Ajusta los pesos para ver cómo cambia el resultado en tiempo real.</p>
+                    <h3 className="font-bold text-slate-800 dark:text-white">Análisis de Sensibilidad</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Ajusta los pesos para ver cómo cambia el resultado en tiempo real.</p>
                 </div>
             </div>
 
-            <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                 {criteria.map((c) => (
-                    <div key={c.id} className="space-y-2">
-                        <div className="flex justify-between text-sm font-bold">
-                            <span className="text-slate-200">{c.name}</span>
-                            <span className="text-blue-400">{(c.weight * 100).toFixed(0)}%</span>
+                    <div key={c.id} className="space-y-3">
+                        <div className="flex justify-between items-center">
+                            <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 truncate pr-4">
+                                {c.name}
+                            </label>
+                            <span className="text-xs font-black bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-blue-600 dark:text-blue-400 px-2.5 py-1 rounded-full shadow-sm">
+                                {c.weight * 10}%
+                            </span>
                         </div>
                         <input
                             type="range"
-                            min="0"
-                            max="1"
-                            step="0.05"
-                            value={c.weight}
-                            onChange={(e) => onWeightChange(c.id, parseFloat(e.target.value))}
-                            className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                            min="1"
+                            max="10"
+                            value={c.weight * 10}
+                            onChange={(e) => onWeightChange(c.id, Number(e.target.value) / 10)}
+                            className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-600 dark:accent-blue-500"
                         />
                     </div>
                 ))}

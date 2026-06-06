@@ -40,6 +40,13 @@ export const MainLayout = () => {
         const newLang = i18n.language === 'es' ? 'en' : 'es';
         i18n.changeLanguage(newLang);
     };
+    const handleJoinRoom = () => {
+        const roomId = window.prompt("Ingresa el ID o código de la Sala Colaborativa:");
+        if (roomId && roomId.trim() !== "") {
+            // Redirigir al usuario a la sala
+            window.location.href = `/collab/${roomId.trim()}`;
+        }
+    };
 
     const menuItems = [
         { name: t('sidebar.dashboard'), path: '/', icon: LayoutDashboard },
@@ -148,6 +155,13 @@ export const MainLayout = () => {
                             </button>
                         </div>
                     )}
+                    <button
+                        onClick={handleJoinRoom}
+                        className="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-xl transition-all w-full text-left font-medium"
+                    >
+                        <Users className="w-5 h-5" />
+                        <span>Unirse a Sala</span>
+                    </button>
 
                     {/* Botón perfil */}
                     <button

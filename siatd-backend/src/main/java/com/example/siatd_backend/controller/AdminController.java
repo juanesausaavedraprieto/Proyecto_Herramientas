@@ -1,10 +1,13 @@
 package com.example.siatd_backend.controller;
 
+import com.example.siatd_backend.model.SystemAuditLog;
 import com.example.siatd_backend.model.SystemSetting;
 import com.example.siatd_backend.model.User;
 import com.example.siatd_backend.repository.DecisionRepository;
+import com.example.siatd_backend.repository.SystemAuditLogRepository;
 import com.example.siatd_backend.repository.SystemSettingRepository;
 import com.example.siatd_backend.repository.UserRepository;
+import java.security.Principal;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,11 +25,13 @@ public class AdminController {
     private final UserRepository userRepository;
     private final DecisionRepository decisionRepository;
     private final SystemSettingRepository systemSettingRepository;
+    private final SystemAuditLogRepository systemAuditLogRepository;
 
-    public AdminController(UserRepository userRepository, DecisionRepository decisionRepository, SystemSettingRepository systemSettingRepository) {
+    public AdminController(UserRepository userRepository, DecisionRepository decisionRepository, SystemSettingRepository systemSettingRepository, SystemAuditLogRepository systemAuditLogRepository) {
         this.userRepository = userRepository;
         this.decisionRepository = decisionRepository;
         this.systemSettingRepository = systemSettingRepository;
+        this.systemAuditLogRepository = systemAuditLogRepository;
     }
 
     /**
@@ -120,8 +125,61 @@ public class AdminController {
     }
 
     @PutMapping("/settings")
-    public ResponseEntity<SystemSetting> updateSettings(@RequestBody SystemSetting newSettings) {
-        newSettings.setId(1L); // Asegurar que sobrescribe la fila 1
-        return ResponseEntity.ok(systemSettingRepository.save(newSettings));
+    public ResponseEntity<SystemSetting> updateSettings(@RequestBody SystemSetting newSettings, Principal principal) {
+
+        // 1. Obtenemos la configuración antigua ANTES de sobrescribirla
+        SystemSetting oldSettings = systemSettingRepository.findById(1L).orElse(new SystemSetting());
+
+        // Determinamos quién está haciendo el cambio
+        String admin = (principal != null) ? principal.getName() : "Sistema";
+
+        // 2. Comparamos y Guardamos Rastros (Auditoría)
+        // Auditar Threshold
+        if (oldSettings.getTopsisThreshold() != newSettings.getTopsisThreshold()) {
+            saveAuditLog(admin, "Umbral TOPSIS",
+                    String.valueOf(oldSettings.getTopsisThreshold()),
+                    String.valueOf(newSettings.getTopsisThreshold()));
+        }
+
+        // Auditar Normalización
+        if (oldSettings.isStrictNormalization() != newSettings.isStrictNormalization()) {
+            saveAuditLog(admin, "Normalización Estricta",
+                    String.valueOf(oldSettings.isStrictNormalization()),
+                    String.valueOf(newSettings.isStrictNormalization()));
+        }
+
+        // Auditar Modelo IA
+        if (oldSettings.getAiModel() != null && !oldSettings.getAiModel().equals(newSettings.getAiModel())) {
+            saveAuditLog(admin, "Modelo de IA", oldSettings.getAiModel(), newSettings.getAiModel());
+        }
+
+        // Auditar Prompt (Opcional, puede ser texto muy largo, pero útil)
+        if (oldSettings.getAiSystemPrompt() != null && !oldSettings.getAiSystemPrompt().equals(newSettings.getAiSystemPrompt())) {
+            saveAuditLog(admin, "Prompt Maestro IA", "Texto modificado", "Texto modificado");
+        }
+
+        // 3. Ahora sí, aseguramos que el ID sea 1 y guardamos la nueva configuración
+        newSettings.setId(1L);
+        SystemSetting savedSettings = systemSettingRepository.save(newSettings);
+
+        return ResponseEntity.ok(savedSettings);
+    }
+
+    // 🛠️ Método privado auxiliar para no repetir código
+    private void saveAuditLog(String admin, String parameter, String oldVal, String newVal) {
+        SystemAuditLog log = new SystemAuditLog();
+        log.setAdminEmail(admin);
+        log.setParameterName(parameter);
+        log.setOldValue(oldVal);
+        log.setNewValue(newVal);
+        systemAuditLogRepository.save(log);
+    }
+
+    // 🚨 NUEVO ENDPOINT PARA REACT
+    @GetMapping("/settings/audit")
+    public ResponseEntity<List<SystemAuditLog>> getSystemAuditLogs() {
+        // Usa el método que creaste en el repositorio para traerlos ordenados del más nuevo al más viejo
+        List<SystemAuditLog> logs = systemAuditLogRepository.findAllByOrderByChangedAtDesc();
+        return ResponseEntity.ok(logs);
     }
 }

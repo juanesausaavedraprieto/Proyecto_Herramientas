@@ -19,7 +19,8 @@ const resources = {
                 dashboard: "Panel Principal",
                 users: "Gestión de Usuarios",
                 audit: "Auditoría Global",
-                settings: "Configuración SIATD"
+                settings: "Configuración SIATD",
+                systemLogs: "Registros del Sistema"
             },
             common: {
                 welcome: "Bienvenido a SIATD",
@@ -43,7 +44,8 @@ const resources = {
                 dashboard: "Main Dashboard",
                 users: "User Management",
                 audit: "Global Audit",
-                settings: "SIATD Settings"
+                settings: "SIATD Settings",
+                systemLogs: "System Logs"
             },
             common: {
                 welcome: "Welcome to SIATD",

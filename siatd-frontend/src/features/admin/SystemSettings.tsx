@@ -68,6 +68,31 @@ export const SystemSettings = () => {
             }
         }
     };
+    // NUEVA FUNCIÓN: Descargar Excel
+    const handleExportExcel = async () => {
+        const toastId = toast.loading("Generando archivo Excel desde el servidor...");
+        try {
+            // 🚨 El responseType 'blob' es vital para archivos binarios
+            const response = await api.get('/admin/export/excel', { responseType: 'blob' });
+
+            // Creamos un link fantasma en memoria para forzar la descarga
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'SIATD_Auditoria_Decisiones.xlsx');
+            document.body.appendChild(link);
+            link.click(); // Disparamos el clic
+
+            // Limpieza
+            link.remove();
+            window.URL.revokeObjectURL(url);
+
+            toast.success("¡Excel exportado correctamente!", { id: toastId });
+        } catch (error) {
+            console.error("Error exportando excel", error);
+            toast.error("Ocurrió un error al intentar exportar los datos.", { id: toastId });
+        }
+    };
 
     if (isLoading) return (
         <div className="flex flex-col items-center justify-center h-64 transition-colors duration-200">
@@ -181,8 +206,11 @@ export const SystemSettings = () => {
                             <Database className="w-5 h-5 text-slate-400 dark:text-slate-500" /> Mantenimiento
                         </h3>
                         <div className="space-y-3">
-                            <button className="w-full py-2.5 px-4 bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-bold border border-slate-200 dark:border-slate-600 transition-colors">
-                                Exportar Logs de Decisiones (CSV)
+                            <button
+                                onClick={handleExportExcel}
+                                className="w-full py-2.5 px-4 bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-bold border border-slate-200 dark:border-slate-600 transition-colors"
+                            >
+                                Exportar Auditoría a Excel (.xlsx)
                             </button>
                         </div>
                     </div>

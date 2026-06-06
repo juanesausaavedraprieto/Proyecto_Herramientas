@@ -26,12 +26,14 @@ import { DefineOptions } from './features/decision-maker/DefineOptions';
 import { EvaluationMatrix } from './features/decision-maker/EvaluationMatrix';
 import { Results } from './features/decision-maker/Results';
 import { ContinueDecision } from './features/decision-maker/ContinueDecision';
+import { CollaborationRoom } from './features/decision-maker/CollaborationRoom';
 
 // Vistas Admin
 import { AdminDashboard } from './features/admin/AdminDashboard';
 import { UserManagement } from './features/admin/UserManagement';
 import { GlobalAudit } from './features/admin/GlobalAudit';
 import { SystemSettings } from './features/admin/SystemSettings';
+import { SystemAuditLog } from './features/admin/SystemAuditLog';
 
 function App() {
   // Leemos el rol del usuario desde el almacenamiento local al inicializar
@@ -62,6 +64,7 @@ function App() {
               <Route path="settings" element={<Settings />} />
 
               {/* Flujo de Decisiones */}
+              <Route path="/collab/:id" element={<CollaborationRoom />} />
               <Route path="new-decision" element={<StartDecision />} />
               <Route path="define-criteria" element={<DefineCriteria />} />
               <Route path="define-options" element={<DefineOptions />} />
@@ -80,6 +83,7 @@ function App() {
               <Route path="users" element={<UserManagement />} />
               <Route path="audit" element={<GlobalAudit />} />
               <Route path="settings" element={<SystemSettings />} />
+              <Route path="/admin/system-logs" element={<SystemAuditLog />} />
             </Route>
           ) : (
             <Route path="/admin/*" element={<Navigate to="/" replace />} />

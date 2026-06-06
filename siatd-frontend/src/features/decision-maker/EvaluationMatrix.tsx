@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDecisionStore } from '../../store/useDecisionStore';
-import { Calculator, ArrowRight, AlertCircle, Loader2, Sparkles } from 'lucide-react';
+import { Calculator, ArrowRight, AlertCircle, Loader2, Sparkles, Users } from 'lucide-react';
 import { api } from '../../api/axios';
 import { toast } from 'sonner'; // 👈 Importamos Sonner
 
@@ -179,6 +179,15 @@ export const EvaluationMatrix = () => {
                     >
                         {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Calcular Mejor Decisión'}
                         <ArrowRight className="w-5 h-5 hidden sm:inline" />
+                    </button>
+                    <button
+                        onClick={() => navigate(`/collab/${currentDecision.id}`)}
+                        disabled={isLoading || isAiLoading}
+                        className="flex items-center justify-center gap-2 bg-purple-100 hover:bg-purple-200 dark:bg-purple-500/20 dark:hover:bg-purple-500/30 text-purple-700 dark:text-purple-300 font-bold py-3 px-4 rounded-lg transition-colors flex-1 md:flex-none border border-purple-200 dark:border-purple-500/30"
+                        title="Invitar a otros a votar en esta matriz"
+                    >
+                        <Users className="w-5 h-5" />
+                        <span className="hidden sm:inline">Sala Colaborativa</span>
                     </button>
                 </div>
             </div>

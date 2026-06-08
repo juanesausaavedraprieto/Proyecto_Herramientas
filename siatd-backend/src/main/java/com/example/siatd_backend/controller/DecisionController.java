@@ -2,11 +2,13 @@ package com.example.siatd_backend.controller;
 
 import com.example.siatd_backend.dto.MatrixRequest;
 import com.example.siatd_backend.dto.RecommendationResponse;
+import com.example.siatd_backend.exception.MatrixAnomalyException;
 import com.example.siatd_backend.model.Criterion;
 import com.example.siatd_backend.model.Decision;
 import com.example.siatd_backend.model.Option;
 import com.example.siatd_backend.model.User;
 import com.example.siatd_backend.repository.UserRepository;
+import com.example.siatd_backend.service.AnomalyDetectorService;
 import com.example.siatd_backend.service.DecisionEngineService;
 import com.example.siatd_backend.service.DecisionService;
 import com.example.siatd_backend.service.GeminiAiService;
@@ -27,6 +29,7 @@ public class DecisionController {
 
     private final DecisionService decisionService;
     private final GeminiAiService geminiAiService;
+    private final AnomalyDetectorService anomalyDetectorService;
     private final DecisionEngineService decisionEngineService;
     private final UserRepository userRepository;
 
@@ -34,11 +37,13 @@ public class DecisionController {
             DecisionService decisionService,
             DecisionEngineService decisionEngineService,
             UserRepository userRepository,
-            GeminiAiService geminiAiService) {
+            GeminiAiService geminiAiService,
+            AnomalyDetectorService anomalyDetectorService) {
         this.decisionService = decisionService;
         this.decisionEngineService = decisionEngineService;
         this.userRepository = userRepository;
         this.geminiAiService = geminiAiService;
+        this.anomalyDetectorService = anomalyDetectorService; // 🚨 Punto y coma arreglado aquí
     }
 
     @GetMapping
@@ -81,27 +86,21 @@ public class DecisionController {
         return new ResponseEntity<>(savedCriterion, HttpStatus.CREATED);
     }
 
-    // 🪄 NUEVO ENDPOINT CORREGIDO: Autoevaluar con Inteligencia Artificial
     @PostMapping("/{decisionId}/auto-evaluate")
     public ResponseEntity<?> autoEvaluateMatrix(@PathVariable UUID decisionId) {
         try {
             Decision decision = decisionService.getDecisionById(decisionId)
                     .orElseThrow(() -> new RuntimeException("Decisión no encontrada"));
 
-            // 1. Pedimos a Gemini el JSON evaluado (en formato String puro)
             String aiJsonString = geminiAiService.autoEvaluateMatrix(decision);
-
-            // 2. Usamos Jackson para convertir ese String en una Lista Real de Java
             ObjectMapper mapper = new ObjectMapper();
 
-            // 🚨 EL SECRETO ESTÁ AQUÍ: Lo forzamos a ser una Lista de Mapas, no un JsonNode genérico
             java.util.List<java.util.Map<String, Object>> evaluationList = mapper.readValue(
                     aiJsonString,
                     new com.fasterxml.jackson.core.type.TypeReference<java.util.List<java.util.Map<String, Object>>>() {
             }
             );
 
-            // 3. Devolvemos la lista nativa al frontend
             return ResponseEntity.ok(evaluationList);
 
         } catch (Exception e) {
@@ -111,34 +110,54 @@ public class DecisionController {
         }
     }
 
+    // 🚨 ENDPOINT REPARADO: Integra Anomaly Detector con MatrixRequest
     @PostMapping("/{decisionId}/calculate")
-    public ResponseEntity<RecommendationResponse> calculateDecision(
+    public ResponseEntity<?> calculateDecision(
             @PathVariable UUID decisionId,
             @RequestBody MatrixRequest matrixRequest) {
 
-        RecommendationResponse result = decisionEngineService.calculateBestOption(decisionId, matrixRequest);
+        try {
+            // 1. Transformamos los UUIDs a Strings usando tu propio método para que el Guardia lo entienda
+            Map<String, Map<String, Double>> stringMatrix = convertMapKeysToStrings(matrixRequest.getScores());
 
-        Decision decision = decisionService.getDecisionById(decisionId)
-                .orElseThrow(() -> new RuntimeException("Decisión no encontrada"));
+            // 2. EL GUARDIA DE SEGURIDAD: Inspecciona la matriz
+            anomalyDetectorService.inspectMatrix(stringMatrix);
 
-        List<String> criteriaNames = decision.getCriteria().stream().map(Criterion::getName).toList();
+            // 3. Si no hay anomalías, procesamos TOPSIS de manera normal
+            RecommendationResponse result = decisionEngineService.calculateBestOption(decisionId, matrixRequest);
 
-        String justificacionIA = geminiAiService.generateDecisionJustification(
-                decision.getTitle(), result.getRecommendedOption().getName(), result.getFinalScores());
+            Decision decision = decisionService.getDecisionById(decisionId)
+                    .orElseThrow(() -> new RuntimeException("Decisión no encontrada"));
 
-        String recomendacionesEstrategicas = geminiAiService.generateStrategicRecommendations(
-                decision.getTitle(), result.getRecommendedOption().getName(), result.getFinalScores(), criteriaNames);
+            List<String> criteriaNames = decision.getCriteria().stream().map(Criterion::getName).toList();
 
-        decision.setJustification(justificacionIA);
-        decision.setRecommendations(recomendacionesEstrategicas);
-        decision.setEvaluationMatrix(convertMapKeysToStrings(matrixRequest.getScores()));
-        decision.setRecommendedOption(result.getRecommendedOption());
-        decision.setFinalScores(result.getFinalScores());
+            // 4. Generamos los textos con Gemini
+            String justificacionIA = geminiAiService.generateDecisionJustification(
+                    decision.getTitle(), result.getRecommendedOption().getName(), result.getFinalScores());
 
-        decisionService.updateDecision(decision);
+            String recomendacionesEstrategicas = geminiAiService.generateStrategicRecommendations(
+                    decision.getTitle(), result.getRecommendedOption().getName(), result.getFinalScores(), criteriaNames);
 
-        result.setJustification(justificacionIA);
-        return ResponseEntity.ok(result);
+            // 5. Guardamos en Base de Datos
+            decision.setJustification(justificacionIA);
+            decision.setRecommendations(recomendacionesEstrategicas);
+            decision.setEvaluationMatrix(stringMatrix);
+            decision.setRecommendedOption(result.getRecommendedOption());
+            decision.setFinalScores(result.getFinalScores());
+
+            decisionService.updateDecision(decision);
+
+            result.setJustification(justificacionIA);
+            return ResponseEntity.ok(result);
+
+        } catch (MatrixAnomalyException e) {
+            // 🛑 Si el guardia detecta una anomalía, detenemos todo y devolvemos 400 Bad Request
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            System.err.println("Error grave en el cálculo: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Error interno al procesar la matriz."));
+        }
     }
 
     @GetMapping("/{id}")

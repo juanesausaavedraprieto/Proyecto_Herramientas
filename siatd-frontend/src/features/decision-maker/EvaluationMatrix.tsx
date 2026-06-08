@@ -2,15 +2,17 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDecisionStore } from '../../store/useDecisionStore';
+import { useNotificationStore } from '../../store/useNotificationStore'; // 👈 Importamos el nuevo Store
 import { Calculator, ArrowRight, AlertCircle, Loader2, Sparkles, Users } from 'lucide-react';
 import { api } from '../../api/axios';
-import { toast } from 'sonner'; // 👈 Importamos Sonner
+import { toast } from 'sonner';
 
 export const EvaluationMatrix = () => {
     const { currentDecision, updateScore, setRecommendation } = useDecisionStore();
+    const addNotification = useNotificationStore((state) => state.addNotification); // 👈 Extraemos la función
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
-    const [isAiLoading, setIsAiLoading] = useState(false); // 👈 Estado exclusivo para la IA
+    const [isAiLoading, setIsAiLoading] = useState(false);
 
     if (!currentDecision || currentDecision.criteria.length === 0 || currentDecision.options.length === 0) {
         return (
@@ -112,6 +114,7 @@ export const EvaluationMatrix = () => {
             setIsAiLoading(false);
         }
     };
+
     // Enviar los puntajes finales al backend para que calcule el ganador
     const handleCalculate = async () => {
         if (!currentDecision) return;
@@ -136,11 +139,20 @@ export const EvaluationMatrix = () => {
             // 3. Guardar el resultado y avanzar
             setRecommendation(response.data);
             navigate('/results');
-            toast.success("¡Análisis TOPSIS completado!"); // 👈 Usamos toast
+            toast.success("¡Análisis TOPSIS completado!");
 
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error al calcular:", error);
-            toast.error("Hubo un error al procesar el modelo matemático."); // 👈 Usamos toast
+
+            // 🚨 Atrapamos el mensaje personalizado de Spring Boot (El error 400 de la Anomalía)
+            const errorMessage = error.response?.data?.message;
+
+            if (errorMessage) {
+                toast.error(errorMessage, { duration: 6000 }); // Lo mostramos elegante en pantalla
+                addNotification(errorMessage); // 👈 ¡Truco Ninja: Se guarda en la bandeja para siempre!
+            } else {
+                toast.error("Ocurrió un error inesperado al procesar la matriz.");
+            }
         } finally {
             setIsLoading(false);
         }
@@ -230,8 +242,8 @@ export const EvaluationMatrix = () => {
                                                     value={score}
                                                     onChange={(e) => handleScoreChange(option.id, criterion.id, Number(e.target.value))}
                                                     className={`w-20 px-2 py-2 text-center rounded-lg border outline-none font-semibold transition-all duration-300 ${isAiLoading
-                                                            ? 'bg-indigo-50 border-indigo-200 text-indigo-400 animate-pulse'
-                                                            : 'bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-600 text-slate-700 dark:text-white focus:ring-2 focus:ring-emerald-500'
+                                                        ? 'bg-indigo-50 border-indigo-200 text-indigo-400 animate-pulse'
+                                                        : 'bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-600 text-slate-700 dark:text-white focus:ring-2 focus:ring-emerald-500'
                                                         }`}
                                                 />
                                             </td>

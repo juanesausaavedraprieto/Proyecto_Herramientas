@@ -12,33 +12,43 @@ import java.util.UUID;
 @Controller
 public class CollaborationWebSocketController {
 
-    // Clase interna para mapear los mensajes que viajan por el Socket
     public static class CollabMessage {
-        public String type; // JOIN, VOTE_SUBMITTED, ROOM_CLOSED
+
+        public String type; // JOIN, VOTE_SUBMITTED, ROOM_CLOSED, CHAT_PUBLIC, CHAT_PRIVATE, DND_TOGGLE
         public String userName;
-        public Map<String, Map<String, Double>> matrix; // Los puntajes que envía el invitado
+
+        // 💬 Nuevos campos para el Chat
+        public String targetUser; // A quién va dirigido (solo para mensajes privados)
+        public String content; // El texto del mensaje
+        public boolean isDndActive; // Estado de "No Molestar"
+
+        public Map<String, Map<String, Double>> matrix;
+        public Object recommendation;
     }
 
-    /**
-     * Cuando un usuario de React envía un mensaje a "/app/decision/{id}/join",
-     * este método lo intercepta y lo retransmite a todos los suscritos en "/topic/decision/{id}"
-     */
     @MessageMapping("/decision/{decisionId}/join")
     @SendTo("/topic/decision/{decisionId}")
     public CollabMessage joinRoom(@DestinationVariable UUID decisionId, @Payload CollabMessage message) {
-        // Registramos en la consola del backend quién entró a qué sala
         System.out.println("Colaboración: " + message.userName + " entró a la sala " + decisionId);
-        return message; // Retransmite el mensaje a todos en la sala
+        return message;
     }
 
-    /**
-     * Cuando un invitado termina su matriz y la envía
-     */
     @MessageMapping("/decision/{decisionId}/vote")
     @SendTo("/topic/decision/{decisionId}")
     public CollabMessage submitVote(@DestinationVariable UUID decisionId, @Payload CollabMessage message) {
-        System.out.println("Voto recibido de " + message.userName + " en sala " + decisionId);
-        // Aquí retransmitimos que este usuario ya votó, para que el Admin vea una "Palomita Verde" en React
-        return message; 
+        return message;
+    }
+
+    // 💬 NUEVO: Endpoint para enrutar el Chat y los estados de privacidad
+    @MessageMapping("/decision/{decisionId}/chat")
+    @SendTo("/topic/decision/{decisionId}")
+    public CollabMessage handleChat(@DestinationVariable UUID decisionId, @Payload CollabMessage message) {
+        /*
+         * Nota de Arquitectura: En un sistema bancario, los mensajes privados se envían 
+         * usando SimpMessagingTemplate a colas /user/queue/ específicas por seguridad. 
+         * Para este módulo colaborativo, transmitimos al tópico general y el Frontend 
+         * se encarga de filtrar (lo cual es ultra rápido y funcional para este caso).
+         */
+        return message;
     }
 }

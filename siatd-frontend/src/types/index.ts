@@ -2,6 +2,14 @@
 
 export type DecisionStatus = 'DRAFT' | 'ANALYZING' | 'COMPLETED';
 
+// 1. 🚨 NUEVO: Definimos la estructura del Usuario que manda el backend
+export interface User {
+    id?: string;
+    name?: string;
+    email?: string;
+    role?: string;
+}
+
 export interface Criterion {
     id: string;
     name: string;      // Ej: "Tiempo requerido", "Costo", "Impacto"
@@ -21,7 +29,9 @@ export interface Decision {
     criteria: Criterion[];
     options: Option[];
 
-    // 👇 AÑADE ESTOS NUEVOS CAMPOS AQUÍ 👇
+    // 2. 🚨 EL FIX ESTÁ AQUÍ: Cambiamos 'string' por la interfaz 'User'
+    user?: User | null;
+
     stressLevel?: number;
     urgencyScore?: number;
     evaluationMatrix?: Record<string, Record<string, number>>;

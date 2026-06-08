@@ -1,18 +1,21 @@
 import { useState, useEffect } from 'react';
-import { Moon, Sun, Shield, User, Bell, ChevronRight } from 'lucide-react';
-import { Link} from 'react-router-dom';
-export const Settings = () => {
-    // Estado para el interruptor visual
-    const [isDark, setIsDark] = useState(false);
+import { Moon, Sun, Shield, User, Bell, ChevronDown, ChevronRight, Trash2, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useNotificationStore } from '../../store/useNotificationStore';
 
-    // Al montar el componente, revisamos si ya estaba activado el modo oscuro
+export const Settings = () => {
+    const [isDark, setIsDark] = useState(false);
+    const [showNotifications, setShowNotifications] = useState(false); // 👈 Estado para expandir el panel
+
+    // Traemos las funciones de nuestro nuevo Store
+    const { notifications, removeNotification, clearAll } = useNotificationStore();
+
     useEffect(() => {
         const isDarkStored = document.documentElement.classList.contains('dark') ||
             localStorage.getItem('theme') === 'dark';
         setIsDark(isDarkStored);
     }, []);
 
-    // Lógica para alternar el tema
     const toggleDarkMode = () => {
         if (document.documentElement.classList.contains('dark')) {
             document.documentElement.classList.remove('dark');
@@ -26,11 +29,10 @@ export const Settings = () => {
     };
 
     return (
-        <div className="max-w-2xl mx-auto py-8 px-4 min-h-screen transition-colors duration-300">
+        <div className="max-w-2xl mx-auto py-8 px-4 min-h-screen transition-colors duration-300 animate-in fade-in duration-500">
             <h1 className="text-3xl font-extrabold text-slate-800 dark:text-white mb-8">Configuración</h1>
 
             <div className="space-y-4">
-
                 {/* --- SECCIÓN: TEMA --- */}
                 <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm flex items-center justify-between transition-all">
                     <div className="flex items-center gap-4">
@@ -42,11 +44,9 @@ export const Settings = () => {
                             <p className="text-sm text-slate-500 dark:text-slate-400">Alternar tema visual del sistema</p>
                         </div>
                     </div>
-
-                    {/* Switch Custom con Tailwind */}
                     <button
                         onClick={toggleDarkMode}
-                        className={`w-14 h-8 flex items-center rounded-full p-1 duration-300 ease-in-out ${isDark ? 'bg-indigo-600' : 'bg-slate-300'}`}
+                        className={`w-14 h-8 flex items-center rounded-full p-1 duration-300 ease-in-out ${isDark ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-600'}`}
                     >
                         <div className={`bg-white w-6 h-6 rounded-full shadow-md transform duration-300 ease-in-out ${isDark ? 'translate-x-6' : ''}`} />
                     </button>
@@ -55,7 +55,7 @@ export const Settings = () => {
                 {/* --- SECCIÓN: PERFIL --- */}
                 <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm flex items-center justify-between transition-all hover:border-blue-200 dark:hover:border-blue-900">
                     <div className="flex items-center gap-4">
-                        <div className="bg-blue-100 text-blue-600 p-3 rounded-2xl">
+                        <div className="bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 p-3 rounded-2xl">
                             <User className="w-6 h-6" />
                         </div>
                         <div>
@@ -63,34 +63,73 @@ export const Settings = () => {
                             <p className="text-sm text-slate-500 dark:text-slate-400">Gestionar nombre y datos personales</p>
                         </div>
                     </div>
-
-                    {/* Cambiamos el button por Link */}
-                    <Link
-                        to="/profile"
-                        className="text-blue-600 dark:text-blue-400 font-bold text-sm hover:underline flex items-center gap-1"
-                    >
+                    <Link to="/profile" className="text-blue-600 dark:text-blue-400 font-bold text-sm hover:underline flex items-center gap-1">
                         Editar
                     </Link>
                 </div>
 
-                {/* --- SECCIÓN: NOTIFICACIONES --- */}
-                <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm flex items-center justify-between transition-all">
-                    <div className="flex items-center gap-4">
-                        <div className="bg-rose-100 text-rose-600 p-3 rounded-2xl">
-                            <Bell className="w-6 h-6" />
+                {/* --- SECCIÓN: NOTIFICACIONES (AHORA INTERACTIVA) --- */}
+                <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden transition-all">
+                    {/* Cabecera Clickable */}
+                    <button
+                        onClick={() => setShowNotifications(!showNotifications)}
+                        className="w-full p-6 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors"
+                    >
+                        <div className="flex items-center gap-4 text-left">
+                            <div className="relative bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 p-3 rounded-2xl">
+                                <Bell className="w-6 h-6" />
+                                {notifications.length > 0 && (
+                                    <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full border-2 border-white dark:border-slate-800">
+                                        {notifications.length}
+                                    </span>
+                                )}
+                            </div>
+                            <div>
+                                <p className="font-bold text-slate-800 dark:text-white">Bandeja de Alertas</p>
+                                <p className="text-sm text-slate-500 dark:text-slate-400">Revisa las advertencias del sistema</p>
+                            </div>
                         </div>
-                        <div>
-                            <p className="font-bold text-slate-800 dark:text-white">Notificaciones</p>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">Alertas de decisiones y recordatorios</p>
+                        {showNotifications ? <ChevronDown className="text-slate-400 w-5 h-5" /> : <ChevronRight className="text-slate-400 w-5 h-5" />}
+                    </button>
+
+                    {/* Contenido Desplegable */}
+                    {showNotifications && (
+                        <div className="px-6 pb-6 border-t border-slate-100 dark:border-slate-700 pt-4 bg-slate-50/50 dark:bg-slate-900/20 animate-in slide-in-from-top-2">
+                            <div className="flex justify-between items-center mb-4">
+                                <h4 className="font-bold text-sm text-slate-700 dark:text-slate-300">Alertas Recientes</h4>
+                                {notifications.length > 0 && (
+                                    <button onClick={clearAll} className="text-xs text-rose-500 hover:text-rose-600 font-bold flex items-center gap-1">
+                                        <Trash2 className="w-3 h-3" /> Vaciar Bandeja
+                                    </button>
+                                )}
+                            </div>
+
+                            {notifications.length === 0 ? (
+                                <p className="text-center text-sm text-slate-400 py-6">No tienes nuevas alertas.</p>
+                            ) : (
+                                <ul className="space-y-3 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                                    {notifications.map((notif) => (
+                                        <li key={notif.id} className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 relative group">
+                                            <button
+                                                onClick={() => removeNotification(notif.id)}
+                                                className="absolute top-2 right-2 text-slate-300 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </button>
+                                            <p className="text-xs text-slate-400 mb-1 font-medium">{notif.date}</p>
+                                            <p className="text-sm text-slate-700 dark:text-slate-300 pr-4">{notif.message}</p>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
                         </div>
-                    </div>
-                    <ChevronRight className="text-slate-400 w-5 h-5" />
+                    )}
                 </div>
 
                 {/* --- SECCIÓN: SEGURIDAD --- */}
                 <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm flex items-center justify-between transition-all">
                     <div className="flex items-center gap-4">
-                        <div className="bg-emerald-100 text-emerald-600 p-3 rounded-2xl">
+                        <div className="bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 p-3 rounded-2xl">
                             <Shield className="w-6 h-6" />
                         </div>
                         <div>
@@ -100,12 +139,10 @@ export const Settings = () => {
                     </div>
                     <ChevronRight className="text-slate-400 w-5 h-5" />
                 </div>
-
             </div>
 
-            {/* Pie de página de configuración */}
             <p className="mt-12 text-center text-slate-400 text-xs">
-                SIATD v1.0.4 — Sistema Inteligente de Apoyo a la Toma de Decisiones
+                SIATD v1.0.5 — Sistema Inteligente de Apoyo a la Toma de Decisiones
             </p>
         </div>
     );

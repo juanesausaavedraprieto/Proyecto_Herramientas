@@ -10,8 +10,17 @@ import java.util.Map;
 @AllArgsConstructor
 @NoArgsConstructor // 👈 ESTA ES LA SOLUCIÓN
 public class RecommendationResponse {
+
     private Option recommendedOption;
     private Map<String, Double> finalScores; // Nombre de la opción -> Puntaje final (0 a 100%)
     private String justification;
     private String recommendations;
+
+    public String getRecommendations() {
+        return recommendations;
+    }
+
+    public void setRecommendations(String recommendations) {
+        this.recommendations = recommendations;
+    }
 }

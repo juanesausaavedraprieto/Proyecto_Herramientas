@@ -162,7 +162,24 @@ public class GeminiAiService {
 
             return rawJson.trim();
         } catch (Exception e) {
-            return "[]"; // Fallback seguro
+            return "[]";
         }
+    }
+
+    public String analyzeEarlyRisks(String decisionTitle, List<String> options) {
+        String optionsList = String.join(", ", options);
+
+        String prompt = String.format(
+                "Eres un consultor experto en gestión de riesgos y análisis de decisiones. "
+                + "El usuario enfrenta este dilema: '%s'. "
+                + "Las opciones a considerar son: [%s]. "
+                + "Para CADA opción, identifica exactamente un (1) riesgo oculto, sesgo cognitivo o posible consecuencia negativa a largo plazo. "
+                + "Se breve, directo e incisivo (máximo 2 líneas por riesgo). "
+                + "Devuelve la respuesta ESTRICTAMENTE en formato JSON como un arreglo de objetos, usando las claves 'opcion' y 'riesgo'. "
+                + "Ejemplo: [{\"opcion\": \"Opción A\", \"riesgo\": \"El costo oculto de mantenimiento podría...\"}]",
+                decisionTitle, optionsList
+        );
+        String rawResponse = executeGeminiRequest(prompt, "[]");
+        return cleanJsonResponse(rawResponse);
     }
 }

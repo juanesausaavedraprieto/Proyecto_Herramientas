@@ -5,39 +5,80 @@ import { useDecisionStore } from '../../store/useDecisionStore';
 import {
     Trophy, ArrowLeft, PieChart, Loader2, Download, FileText,
     AlertTriangle, Activity, Sliders, ClipboardList, ShieldAlert,
-    Sparkles, CheckCircle2
+    Sparkles, CheckCircle2, RefreshCw // 👈 Importamos RefreshCw
 } from 'lucide-react';
 import { ScoreChart } from './components/ScoreChart';
 import { RadarEvaluationChart } from './components/RadarEvaluationChart';
 import { SensitivityPanel } from './components/SensitivityPanel';
 import { api } from '../../api/axios';
+import { calculateLocalTopsis } from '../../utils/topsisMath';
+import { toast } from 'sonner'; // 👈 Importamos toast para las notificaciones
 
 import jsPDF from 'jspdf';
 import { toPng } from 'html-to-image';
 
 interface RecommendationsProps {
+    decisionId: string; // 👈 Ahora necesitamos el ID para saber a quién regenerar
     rawRecommendations: string;
+    onRegenerated: (newText: string) => void; // 👈 Función para avisarle a la pantalla principal que hay texto nuevo
 }
 
-export const StrategicRecommendations = ({ rawRecommendations }: RecommendationsProps) => {
+export const StrategicRecommendations = ({ decisionId, rawRecommendations, onRegenerated }: RecommendationsProps) => {
+    const [isRegenerating, setIsRegenerating] = useState(false);
+
     // Función simple para limpiar o formatear las secciones si vienen con marcadores ###
     const sections = rawRecommendations.split('###');
 
     const getSectionContent = (index: number) => {
         if (!sections[index]) return 'Procesando sugerencias analíticas...';
-        // Removemos el título original del split para dejar solo el cuerpo
         return sections[index].replace(/^\s*\d+\.\s*[^\n]*/g, '').trim();
     };
 
+    // 🚨 NUEVA FUNCIÓN: Llama al endpoint de regeneración
+    const handleRegenerate = async () => {
+        setIsRegenerating(true);
+        toast.info("Solicitando un nuevo análisis a Gemini...", { duration: 3000 });
+
+        try {
+            const response = await api.post(`/decisions/${decisionId}/regenerate-recommendations`);
+            const newText = response.data.recommendations;
+            onRegenerated(newText); // Actualizamos el estado del padre
+            toast.success("¡Análisis estratégico regenerado con éxito!");
+        } catch (error) {
+            toast.error("Los servidores de IA siguen ocupados. Intenta en unos minutos.");
+        } finally {
+            setIsRegenerating(false);
+        }
+    };
+
+    // Detectamos si es el texto por defecto (fallback) para sugerirle al usuario que recargue
+    const isFallback = rawRecommendations.includes("1. Proceder con el despliegue");
+
     return (
         <div className="bg-white dark:bg-slate-800 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-sm p-8 mt-8 animate-in fade-in duration-700 transition-colors">
-            <div className="flex items-center gap-2 mb-6">
-                <Sparkles className="w-6 h-6 text-indigo-500 dark:text-indigo-400 animate-pulse" />
-                <h3 className="text-xl font-black text-slate-800 dark:text-white">Consultoría Estratégica del Sistema</h3>
+
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <div className="flex items-center gap-2">
+                    <Sparkles className="w-6 h-6 text-indigo-500 dark:text-indigo-400 animate-pulse" />
+                    <h3 className="text-xl font-black text-slate-800 dark:text-white">Consultoría Estratégica del Sistema</h3>
+                </div>
+
+                {/* 🚨 EL NUEVO BOTÓN DE REGENERACIÓN */}
+                <button
+                    onClick={handleRegenerate}
+                    disabled={isRegenerating}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all border ${isFallback
+                            ? 'bg-amber-100 text-amber-700 border-amber-300 hover:bg-amber-200 animate-pulse'
+                            : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600'
+                        } disabled:opacity-50`}
+                    title="Solicitar a la IA que redacte nuevas estrategias"
+                >
+                    <RefreshCw className={`w-4 h-4 ${isRegenerating ? 'animate-spin' : ''}`} />
+                    {isRegenerating ? 'Consultando IA...' : isFallback ? 'Reintentar Análisis IA' : 'Generar Otras Ideas'}
+                </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
                 {/* Bloque 1: Plan de Acción */}
                 <div className="bg-emerald-50/40 dark:bg-emerald-500/10 border border-emerald-100/60 dark:border-emerald-500/20 p-6 rounded-2xl flex flex-col gap-3 transition-colors">
                     <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-400 font-bold text-sm uppercase tracking-wider">
@@ -45,11 +86,11 @@ export const StrategicRecommendations = ({ rawRecommendations }: Recommendations
                         Plan de Acción
                     </div>
                     <div className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed whitespace-pre-line font-medium">
-                        {getSectionContent(1) || '1. Iniciar preparativos.\n2. Evaluar recursos financieros.\n3. Ejecutar fase piloto.'}
+                        {getSectionContent(1)}
                     </div>
                 </div>
 
-                {/* Bloque 2: Gestión de Riesgos */}
+                {/* Bloque 2: Mitigación de Riesgos */}
                 <div className="bg-amber-50/40 dark:bg-amber-500/10 border border-amber-100/60 dark:border-amber-500/20 p-6 rounded-2xl flex flex-col gap-3 transition-colors">
                     <div className="flex items-center gap-2 text-amber-800 dark:text-amber-400 font-bold text-sm uppercase tracking-wider">
                         <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-500" />
@@ -60,7 +101,7 @@ export const StrategicRecommendations = ({ rawRecommendations }: Recommendations
                     </div>
                 </div>
 
-                {/* Bloque 3: Alertas de Sesgo */}
+                {/* Bloque 3: Control de Sesgo */}
                 <div className="bg-indigo-50/40 dark:bg-indigo-500/10 border border-indigo-100/60 dark:border-indigo-500/20 p-6 rounded-2xl flex flex-col gap-3 transition-colors">
                     <div className="flex items-center gap-2 text-indigo-800 dark:text-indigo-400 font-bold text-sm uppercase tracking-wider">
                         <ShieldAlert className="w-5 h-5 text-indigo-600 dark:text-indigo-500" />
@@ -70,7 +111,6 @@ export const StrategicRecommendations = ({ rawRecommendations }: Recommendations
                         {getSectionContent(3)}
                     </div>
                 </div>
-
             </div>
         </div>
     );
@@ -86,8 +126,11 @@ export const Results = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
 
-    // Estado para el Análisis de Sensibilidad (Pesos dinámicos)
+    // 🚨 ESTADOS PARA LA SIMULACIÓN
     const [localWeights, setLocalWeights] = useState<any[]>([]);
+    const [originalWeights, setOriginalWeights] = useState<any[]>([]);
+    const [simulatedScores, setSimulatedScores] = useState<Record<string, number> | null>(null);
+    const [isSimulationActive, setIsSimulationActive] = useState(false);
 
     const isHistoryView = !!id || location.pathname.includes('continue');
 
@@ -102,7 +145,7 @@ export const Results = () => {
                         title: resData.title,
                         recommendedOptionName: resData.recommendedOption?.name || "Sin recomendación",
                         justification: resData.justification || "Análisis recuperado del historial.",
-                        recommendations: resData.recommendations || "", // 👈 Recogemos recomendaciones del backend
+                        recommendations: resData.recommendations || "",
                         finalScores: resData.finalScores || {},
                         stressLevel: resData.stressLevel || 1,
                         urgencyScore: resData.urgencyScore || 1,
@@ -112,7 +155,9 @@ export const Results = () => {
                     });
 
                     if (resData.criteria) {
-                        setLocalWeights(resData.criteria.map((c: any) => ({ id: c.id, name: c.name, weight: c.weight })));
+                        const weights = resData.criteria.map((c: any) => ({ ...c }));
+                        setLocalWeights(weights);
+                        setOriginalWeights(JSON.parse(JSON.stringify(weights))); // Copia profunda
                     }
                 } catch (err) {
                     console.error("Error al cargar historial:", err);
@@ -125,7 +170,7 @@ export const Results = () => {
                     title: decision.title,
                     recommendedOptionName: recommendation.recommendedOption.name,
                     justification: recommendation.justification,
-                    recommendations: recommendation.recommendations || "", // 👈 Recogemos recomendaciones del store
+                    recommendations: recommendation.recommendations || "",
                     finalScores: recommendation.finalScores,
                     stressLevel: decision.stressLevel || 1,
                     urgencyScore: decision.urgencyScore || 1,
@@ -134,7 +179,9 @@ export const Results = () => {
                     matrix: {}
                 });
                 if (decision.criteria) {
-                    setLocalWeights(decision.criteria.map((c: any) => ({ id: c.id, name: c.name, weight: c.weight })));
+                    const weights = decision.criteria.map((c: any) => ({ ...c }));
+                    setLocalWeights(weights);
+                    setOriginalWeights(JSON.parse(JSON.stringify(weights))); // Copia profunda
                 }
             }
         };
@@ -168,11 +215,31 @@ export const Results = () => {
         }
     };
 
-    // --- PROCESAMIENTO DE DATOS PARA GRÁFICOS ---
-    const chartData = data?.finalScores ? Object.entries(data.finalScores).map(([name, score]) => ({
+    // --- LÓGICA DE SIMULACIÓN WHAT-IF ---
+    const handleWeightChange = (criterionId: string, newWeight: number) => {
+        setIsSimulationActive(true);
+        const updatedWeights = localWeights.map(w => w.id === criterionId ? { ...w, weight: newWeight } : w);
+        setLocalWeights(updatedWeights);
+
+        // Recalcular TOPSIS localmente a la velocidad de la luz
+        if (data && data.matrix && data.options) {
+            const newScores = calculateLocalTopsis(data.matrix, updatedWeights, data.options);
+            setSimulatedScores(newScores);
+        }
+    };
+
+    const handleResetSimulation = () => {
+        setLocalWeights(JSON.parse(JSON.stringify(originalWeights)));
+        setSimulatedScores(null);
+        setIsSimulationActive(false);
+    };
+
+    const activeScores = isSimulationActive ? simulatedScores : data?.finalScores;
+
+    const chartData = activeScores ? Object.entries(activeScores).map(([name, score]) => ({
         optionName: name,
         score: score as number
-    })) : [];
+    })).sort((a, b) => b.score - a.score) : []; // Ordenamos de mayor a menor para mejor visibilidad
 
     // Generamos la data del Radar cruzando los criterios con las opciones y la matriz
     const radarData = data?.criteria?.map((c: any) => {
@@ -185,11 +252,6 @@ export const Results = () => {
     }) || [];
 
     const optionNames = data?.options?.map((o: any) => o.name) || [];
-
-    // Manejador del Slider
-    const handleWeightChange = (criterionId: string, newWeight: number) => {
-        setLocalWeights(prev => prev.map(w => w.id === criterionId ? { ...w, weight: newWeight } : w));
-    };
 
     if (isLoading) return (
         <div className="flex flex-col items-center justify-center h-64">
@@ -213,7 +275,12 @@ export const Results = () => {
                     <h2 className="text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight">{data.title}</h2>
                     <p className="text-slate-500 dark:text-slate-400 text-sm">Resumen detallado del análisis mediante TOPSIS</p>
                 </div>
-                <button onClick={handleExportPDF} disabled={isExporting} className="flex items-center gap-2 bg-[#1e293b] dark:bg-slate-700 text-white px-5 py-2.5 rounded-xl hover:bg-slate-800 dark:hover:bg-slate-600 transition-all shadow-lg disabled:opacity-50">
+                <button
+                    onClick={handleExportPDF}
+                    disabled={isExporting || isSimulationActive}
+                    className="flex items-center gap-2 bg-[#1e293b] dark:bg-slate-700 text-white px-5 py-2.5 rounded-xl hover:bg-slate-800 dark:hover:bg-slate-600 transition-all shadow-lg disabled:opacity-50"
+                    title={isSimulationActive ? "Restaura los pesos para poder exportar el informe oficial" : "Descargar en PDF"}
+                >
                     {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                     {isExporting ? 'Generando...' : 'Exportar Informe PDF'}
                 </button>
@@ -273,15 +340,28 @@ export const Results = () => {
                 </div>
 
                 {/* Panel de Análisis de Sensibilidad */}
-                {localWeights.length > 0 && (
+                {localWeights.length > 0 && data?.matrix && (
                     <div className="mt-8 border-t border-dashed border-slate-200 dark:border-slate-700 pt-8 transition-colors">
-                        <SensitivityPanel criteria={localWeights} onWeightChange={handleWeightChange} />
+                        <SensitivityPanel
+                            criteria={localWeights}
+                            onWeightChange={handleWeightChange}
+                            onReset={handleResetSimulation}
+                        />
+                        {isSimulationActive && (
+                            <div className="mt-4 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 p-3 rounded-xl text-sm font-medium text-center animate-in fade-in">
+                                Modo Simulación Activo: Las gráficas superiores reflejan cálculos dinámicos no guardados en base de datos.
+                            </div>
+                        )}
                     </div>
                 )}
 
                 {/* --- NUEVA CONSULTORÍA ESTRATÉGICA --- */}
                 {data?.recommendations && (
-                    <StrategicRecommendations rawRecommendations={data.recommendations} />
+                    <StrategicRecommendations
+                        decisionId={id || currentDecision?.id || ''}
+                        rawRecommendations={data.recommendations}
+                        onRegenerated={(newText) => setData({ ...data, recommendations: newText })}
+                    />
                 )}
             </div>
 

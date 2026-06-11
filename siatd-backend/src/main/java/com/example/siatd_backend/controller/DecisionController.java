@@ -43,7 +43,7 @@ public class DecisionController {
         this.decisionEngineService = decisionEngineService;
         this.userRepository = userRepository;
         this.geminiAiService = geminiAiService;
-        this.anomalyDetectorService = anomalyDetectorService; // 🚨 Punto y coma arreglado aquí
+        this.anomalyDetectorService = anomalyDetectorService;
     }
 
     @GetMapping
@@ -110,7 +110,6 @@ public class DecisionController {
         }
     }
 
-    // 🚨 ENDPOINT REPARADO: Integra Anomaly Detector con MatrixRequest
     @PostMapping("/{decisionId}/calculate")
     public ResponseEntity<?> calculateDecision(
             @PathVariable UUID decisionId,
@@ -135,6 +134,13 @@ public class DecisionController {
             String justificacionIA = geminiAiService.generateDecisionJustification(
                     decision.getTitle(), result.getRecommendedOption().getName(), result.getFinalScores());
 
+            // ⏳ EL FIX: Pausamos el hilo por 2 segundos para evitar el Error 429 (Too Many Requests) de Google
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+
             String recomendacionesEstrategicas = geminiAiService.generateStrategicRecommendations(
                     decision.getTitle(), result.getRecommendedOption().getName(), result.getFinalScores(), criteriaNames);
 
@@ -148,6 +154,10 @@ public class DecisionController {
             decisionService.updateDecision(decision);
 
             result.setJustification(justificacionIA);
+
+            // 🚨 EL FIX: Le pasamos las recomendaciones al DTO para que React las vea INSTANTÁNEAMENTE
+            result.setRecommendations(recomendacionesEstrategicas);
+
             return ResponseEntity.ok(result);
 
         } catch (MatrixAnomalyException e) {
@@ -195,5 +205,60 @@ public class DecisionController {
         String email = principal.getName();
         decisionService.deleteAllDecisionsForUser(email);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{decisionId}/risks")
+    public ResponseEntity<?> getEarlyRisks(@PathVariable UUID decisionId) {
+        try {
+            Decision decision = decisionService.getDecisionById(decisionId)
+                    .orElseThrow(() -> new RuntimeException("Decisión no encontrada"));
+
+            List<String> optionNames = decision.getOptions().stream().map(Option::getName).toList();
+
+            // Llamamos a la IA
+            String aiJsonString = geminiAiService.analyzeEarlyRisks(decision.getTitle(), optionNames);
+
+            // Limpiamos el texto por si Gemini añade marcadores Markdown (```json ... ```)
+            String cleanJson = aiJsonString.replace("```json", "").replace("```", "").trim();
+
+            ObjectMapper mapper = new ObjectMapper();
+            java.util.List<java.util.Map<String, String>> risksList = mapper.readValue(
+                    cleanJson,
+                    new com.fasterxml.jackson.core.type.TypeReference<>() {
+            }
+            );
+
+            return ResponseEntity.ok(risksList);
+
+        } catch (Exception e) {
+            System.err.println("Error generando riesgos tempranos: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(java.util.Map.of("error", "La IA no pudo procesar los riesgos preventivos."));
+        }
+    }
+
+    // 🚨 NUEVO ENDPOINT: Para reintentar la IA si se atora con el texto por defecto
+    @PostMapping("/{decisionId}/regenerate-recommendations")
+    public ResponseEntity<?> regenerateRecommendations(@PathVariable UUID decisionId) {
+        try {
+            Decision decision = decisionService.getDecisionById(decisionId)
+                    .orElseThrow(() -> new RuntimeException("Decisión no encontrada"));
+
+            List<String> criteriaNames = decision.getCriteria().stream().map(Criterion::getName).toList();
+
+            // Reintentamos la llamada a Gemini
+            String nuevasRecomendaciones = geminiAiService.generateStrategicRecommendations(
+                    decision.getTitle(), decision.getRecommendedOption().getName(), decision.getFinalScores(), criteriaNames);
+
+            // Guardamos en la base de datos el nuevo resultado
+            decision.setRecommendations(nuevasRecomendaciones);
+            decisionService.updateDecision(decision);
+
+            // Devolvemos el nuevo texto
+            return ResponseEntity.ok(java.util.Map.of("recommendations", nuevasRecomendaciones));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(java.util.Map.of("error", "No se pudo regenerar. Intenta más tarde."));
+        }
     }
 }

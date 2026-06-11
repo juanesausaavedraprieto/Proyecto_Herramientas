@@ -2,17 +2,23 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDecisionStore } from '../../store/useDecisionStore';
-import { useNotificationStore } from '../../store/useNotificationStore'; // 👈 Importamos el nuevo Store
-import { Calculator, ArrowRight, AlertCircle, Loader2, Sparkles, Users } from 'lucide-react';
+import { Calculator, ArrowRight, AlertCircle, Loader2, Sparkles, Users, ShieldAlert, AlertTriangle } from 'lucide-react';
 import { api } from '../../api/axios';
 import { toast } from 'sonner';
+import { useNotificationStore } from '../../store/useNotificationStore';
 
 export const EvaluationMatrix = () => {
     const { currentDecision, updateScore, setRecommendation } = useDecisionStore();
-    const addNotification = useNotificationStore((state) => state.addNotification); // 👈 Extraemos la función
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
     const [isAiLoading, setIsAiLoading] = useState(false);
+
+    // 🚨 ESTADOS PARA EL PANEL DE RIESGOS
+    const [earlyRisks, setEarlyRisks] = useState<any[]>([]);
+    const [isRisksLoading, setIsRisksLoading] = useState(false);
+    const [showRisksPanel, setShowRisksPanel] = useState(false);
+
+    const addNotification = useNotificationStore((state) => state.addNotification);
 
     if (!currentDecision || currentDecision.criteria.length === 0 || currentDecision.options.length === 0) {
         return (
@@ -24,22 +30,45 @@ export const EvaluationMatrix = () => {
         );
     }
 
-    // Manejar el cambio de un puntaje manual en la matriz
     const handleScoreChange = (optionId: string, criterionId: string, value: number) => {
-        // Validación de seguridad para que no pongan más de 10 o menos de 1
         const safeValue = Math.max(1, Math.min(10, value));
         updateScore(optionId, criterionId, safeValue);
     };
 
-    // 🪄 NUEVO: Función súper robusta y tolerante a errores ortográficos de la IA
+    // 🛡️ NUEVO: Función para pedir los riesgos a Gemini
+    const handleFetchRisks = async () => {
+        if (!currentDecision) return;
+
+        // Si ya los tenemos, solo abrimos/cerramos el panel
+        if (earlyRisks.length > 0) {
+            setShowRisksPanel(!showRisksPanel);
+            return;
+        }
+
+        setIsRisksLoading(true);
+        toast.info("Consultando matriz de riesgos preventivos...");
+
+        try {
+            const response = await api.get(`/decisions/${currentDecision.id}/risks`);
+            setEarlyRisks(response.data);
+            setShowRisksPanel(true);
+            toast.success("Riesgos identificados con éxito.");
+        } catch (error) {
+            console.error("Error al obtener riesgos:", error);
+            toast.error("No se pudo cargar el análisis de riesgos.");
+        } finally {
+            setIsRisksLoading(false);
+        }
+    };
+
     const handleAiAutocomplete = async () => {
+        // ... (Tu código intacto de handleAiAutocomplete)
         if (!currentDecision) return;
         setIsAiLoading(true);
         toast.info("La IA está analizando tu dilema...", { duration: 3000 });
 
         try {
             const response = await api.post(`/decisions/${currentDecision.id}/auto-evaluate`);
-
             let rawData = response.data;
             let aiEvaluations: any = [];
 
@@ -63,7 +92,6 @@ export const EvaluationMatrix = () => {
                 throw new Error("El formato devuelto no contiene evaluaciones.");
             }
 
-            // 🛠️ Función destructora de tildes, mayúsculas y espacios
             const normalizeText = (text: string) => {
                 if (!text) return "";
                 return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
@@ -71,22 +99,16 @@ export const EvaluationMatrix = () => {
 
             let matchCount = 0;
 
-            // 👁️ Imprimimos en consola lo que dijo la IA por si quieres curiosear (F12)
-            console.log("Respuesta cruda de la IA:", aiEvaluations);
-
             aiEvaluations.forEach((evalData: any) => {
-                // 1. Atrapamos variaciones de llaves que la IA pueda inventar
                 const rawOpcion = evalData.opcion || evalData.Opcion || evalData.Option || evalData["opción"];
                 const rawCriterio = evalData.criterio || evalData.Criterio || evalData.Criterion || evalData["criterio"];
                 const rawPuntaje = evalData.puntaje || evalData.Puntaje || evalData.score || evalData.value;
 
                 if (!rawOpcion || !rawCriterio || rawPuntaje === undefined) return;
 
-                // 2. Normalizamos la respuesta de la IA
                 const normalizedOpcion = normalizeText(String(rawOpcion));
                 const normalizedCriterio = normalizeText(String(rawCriterio));
 
-                // 3. Normalizamos lo que tú escribiste en la app y comparamos
                 const matchedOption = currentDecision.options.find(
                     o => normalizeText(o.name) === normalizedOpcion
                 );
@@ -95,7 +117,6 @@ export const EvaluationMatrix = () => {
                 );
 
                 if (matchedOption && matchedCriterion) {
-                    // Nos aseguramos de que el puntaje sea un número válido
                     updateScore(matchedOption.id, matchedCriterion.id, Number(rawPuntaje));
                     matchCount++;
                 }
@@ -104,24 +125,22 @@ export const EvaluationMatrix = () => {
             if (matchCount > 0) {
                 toast.success(`¡Matriz autocompletada con éxito! (${matchCount} valores)`);
             } else {
-                toast.warning("La IA respondió, pero no coincidieron los nombres. Abre la consola (F12) para ver qué devolvió.");
+                toast.warning("La IA respondió, pero no coincidieron los nombres.");
             }
 
         } catch (error) {
-            console.error("Error en autocompletado de IA:", error);
             toast.error("La IA falló al generar la matriz. Intenta de nuevo.");
         } finally {
             setIsAiLoading(false);
         }
     };
 
-    // Enviar los puntajes finales al backend para que calcule el ganador
     const handleCalculate = async () => {
+        // ... (Tu código intacto de handleCalculate)
         if (!currentDecision) return;
         setIsLoading(true);
 
         try {
-            // 1. Armar el objeto para Spring Boot
             const matrixPayload: Record<string, Record<string, number>> = {};
 
             currentDecision.options.forEach(option => {
@@ -131,25 +150,19 @@ export const EvaluationMatrix = () => {
                 });
             });
 
-            // 2. Enviar a la API
             const response = await api.post(`/decisions/${currentDecision.id}/calculate`, {
                 scores: matrixPayload
             });
 
-            // 3. Guardar el resultado y avanzar
             setRecommendation(response.data);
             navigate('/results');
             toast.success("¡Análisis TOPSIS completado!");
 
         } catch (error: any) {
-            console.error("Error al calcular:", error);
-
-            // 🚨 Atrapamos el mensaje personalizado de Spring Boot (El error 400 de la Anomalía)
             const errorMessage = error.response?.data?.message;
-
             if (errorMessage) {
-                toast.error(errorMessage, { duration: 6000 }); // Lo mostramos elegante en pantalla
-                addNotification(errorMessage); // 👈 ¡Truco Ninja: Se guarda en la bandeja para siempre!
+                toast.error(errorMessage, { duration: 6000 });
+                addNotification(errorMessage);
             } else {
                 toast.error("Ocurrió un error inesperado al procesar la matriz.");
             }
@@ -171,42 +184,72 @@ export const EvaluationMatrix = () => {
                     </p>
                 </div>
 
-                {/* 🪄 Botones de Acción Agrupados */}
-                <div className="flex items-center gap-3 w-full md:w-auto">
+                <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                    {/* 🛡️ NUEVO BOTÓN: Consultar Riesgos */}
+                    <button
+                        onClick={handleFetchRisks}
+                        disabled={isRisksLoading}
+                        className="flex items-center justify-center gap-2 bg-amber-100 hover:bg-amber-200 dark:bg-amber-500/20 dark:hover:bg-amber-500/30 text-amber-700 dark:text-amber-300 font-bold py-3 px-4 rounded-lg transition-colors disabled:opacity-50 border border-amber-200 dark:border-amber-500/30"
+                        title="Identificar puntos ciegos antes de evaluar"
+                    >
+                        {isRisksLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <ShieldAlert className="w-5 h-5" />}
+                        <span className="hidden sm:inline">Evaluar Riesgos</span>
+                    </button>
+
                     <button
                         onClick={handleAiAutocomplete}
                         disabled={isLoading || isAiLoading}
-                        className="flex items-center justify-center gap-2 bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-500/20 dark:hover:bg-indigo-500/30 text-indigo-700 dark:text-indigo-300 font-bold py-3 px-4 rounded-lg transition-colors disabled:opacity-50 flex-1 md:flex-none border border-indigo-200 dark:border-indigo-500/30"
-                        title="Dejar que la Inteligencia Artificial puntúe por ti"
+                        className="flex items-center justify-center gap-2 bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-500/20 dark:hover:bg-indigo-500/30 text-indigo-700 dark:text-indigo-300 font-bold py-3 px-4 rounded-lg transition-colors disabled:opacity-50 border border-indigo-200 dark:border-indigo-500/30"
                     >
                         {isAiLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-                        <span className="hidden sm:inline">{isAiLoading ? 'Analizando...' : 'Auto-Evaluar con IA'}</span>
-                        <span className="sm:hidden">IA</span>
+                        <span className="hidden sm:inline">Auto-Evaluar</span>
                     </button>
 
                     <button
                         onClick={handleCalculate}
                         disabled={isLoading || isAiLoading}
-                        className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors disabled:opacity-50 flex-1 md:flex-none shadow-lg shadow-emerald-200 dark:shadow-none"
+                        className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors shadow-lg shadow-emerald-200 dark:shadow-none"
                     >
                         {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Calcular Mejor Decisión'}
                         <ArrowRight className="w-5 h-5 hidden sm:inline" />
                     </button>
+
                     <button
                         onClick={() => navigate(`/collab/${currentDecision.id}`)}
-                        disabled={isLoading || isAiLoading}
-                        className="flex items-center justify-center gap-2 bg-purple-100 hover:bg-purple-200 dark:bg-purple-500/20 dark:hover:bg-purple-500/30 text-purple-700 dark:text-purple-300 font-bold py-3 px-4 rounded-lg transition-colors flex-1 md:flex-none border border-purple-200 dark:border-purple-500/30"
-                        title="Invitar a otros a votar en esta matriz"
+                        className="flex items-center justify-center gap-2 bg-purple-100 hover:bg-purple-200 text-purple-700 dark:bg-purple-500/20 dark:text-purple-300 font-bold py-3 px-4 rounded-lg transition-colors"
+                        title="Ir a Sala Colaborativa"
                     >
                         <Users className="w-5 h-5" />
-                        <span className="hidden sm:inline">Sala Colaborativa</span>
                     </button>
                 </div>
             </div>
 
+            {/* 🛡️ EL PANEL DE RIESGOS DESPLEGABLE */}
+            {showRisksPanel && (
+                <div className="mb-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 p-6 rounded-2xl animate-in slide-in-from-top-4 duration-300 shadow-sm">
+                    <h3 className="text-amber-800 dark:text-amber-400 font-bold mb-4 flex items-center gap-2">
+                        <AlertTriangle className="w-5 h-5" />
+                        Consideraciones Previas (Puntos Ciegos)
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {earlyRisks.map((riskItem, idx) => (
+                            <div key={idx} className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-amber-100 dark:border-amber-800/50">
+                                <span className="text-xs font-black uppercase text-amber-600 dark:text-amber-500 block mb-1">
+                                    Opción: {riskItem.opcion}
+                                </span>
+                                <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">
+                                    "{riskItem.riesgo}"
+                                </p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden transition-colors">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
+                        {/* ... (Tu tabla intacta) ... */}
                         <thead>
                             <tr className="bg-slate-50 dark:bg-slate-800/80 border-b border-gray-200 dark:border-slate-700">
                                 <th className="p-4 font-semibold text-slate-700 dark:text-slate-300 border-r border-gray-200 dark:border-slate-700 w-1/4">

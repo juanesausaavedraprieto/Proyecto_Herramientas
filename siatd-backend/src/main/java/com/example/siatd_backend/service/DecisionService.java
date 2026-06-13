@@ -96,4 +96,8 @@ public class DecisionService {
             decisionRepository.deleteAll(userDecisions);
         }
     }
+
+    public DecisionRepository getDecisionRepository() {
+        return decisionRepository;
+    }
 }

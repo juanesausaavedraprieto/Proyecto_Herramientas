@@ -18,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -259,6 +260,39 @@ public class DecisionController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(java.util.Map.of("error", "No se pudo regenerar. Intenta más tarde."));
+        }
+    }
+
+    // 🚨 NUEVO: Obtener decisiones que requieren feedback (Para el Frontend)
+    @GetMapping("/pending-feedback")
+    public ResponseEntity<List<Decision>> getPendingFeedback(Principal principal) {
+        String email = principal.getName();
+        // 🛠️ TRUCO DE PRUEBA: Cambia "minusDays(30)" por "minusMinutes(1)" para probarlo de inmediato
+        LocalDateTime threshold = LocalDateTime.now().minusDays(5);
+        List<Decision> pending = decisionService.getDecisionRepository().findPendingFeedback(email, threshold);
+        return ResponseEntity.ok(pending);
+    }
+
+    // 🚨 NUEVO: Guardar la calificación de estrellas
+    @PostMapping("/{decisionId}/feedback")
+    public ResponseEntity<?> submitFeedback(
+            @PathVariable UUID decisionId,
+            @RequestBody Map<String, Object> payload) {
+        try {
+            Decision decision = decisionService.getDecisionById(decisionId)
+                    .orElseThrow(() -> new RuntimeException("Decisión no encontrada"));
+
+            Integer score = (Integer) payload.get("score");
+            String notes = (String) payload.get("notes");
+
+            decision.setFeedbackScore(score);
+            decision.setFeedbackNotes(notes);
+            decisionService.updateDecision(decision);
+
+            return ResponseEntity.ok(Map.of("message", "Feedback guardado con éxito. ¡Gracias!"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "No se pudo guardar el feedback."));
         }
     }
 }

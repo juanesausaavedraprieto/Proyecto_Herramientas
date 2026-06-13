@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../../api/axios';
 import type { Decision } from '../../types';
 import { LayoutDashboard, Clock, CheckCircle2, ArrowRight, PlusCircle, Trash2 } from 'lucide-react';
+import { PendingFeedbackBanner } from './components/PendingFeedbackBanner';
 
 export const Dashboard = () => {
     const navigate = useNavigate();
@@ -41,11 +42,13 @@ export const Dashboard = () => {
         }
     };
 
-    const completedDecisions = decisions.filter(d => d.status === 'COMPLETED' || !!d.recommendedOption);
-    const draftDecisions = decisions.filter(d => d.status !== 'COMPLETED' && !d.recommendedOption);
-
+    const completedDecisions = decisions.filter(d => !!d.recommendedOption);
+    const draftDecisions = decisions.filter(d => !d.recommendedOption);
     return (
         <div className="max-w-6xl mx-auto mt-6 transition-colors duration-200">
+            {/* Banner de Feedback Pendiente */}
+            <PendingFeedbackBanner />
+
             <div className="flex justify-between items-center mb-8">
                 <div>
                     <h2 className="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-3">
@@ -112,7 +115,7 @@ export const Dashboard = () => {
                             </thead>
                             <tbody>
                                 {decisions.slice().reverse().map((decision) => {
-                                    const isCompleted = decision.status === 'COMPLETED' || !!decision.recommendedOption;
+                                    const isCompleted = !!decision.recommendedOption;
                                     return (
                                         <tr key={decision.id} className="border-b border-gray-50 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
                                             <td className="p-4 font-medium text-slate-800 dark:text-slate-200">{decision.title}</td>

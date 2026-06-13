@@ -77,5 +77,11 @@ public class Decision {
     @Column(columnDefinition = "jsonb")
     private Map<String, Double> finalScores;
     @Column(columnDefinition = "TEXT")
-    private String recommendations; // Nuevo campo en PostgreSQL para las sugerencias de la IA
+    private String recommendations; 
+    
+    @Column(name = "feedback_score")
+    private Integer feedbackScore;
+
+    @Column(name = "feedback_notes", columnDefinition = "TEXT")
+    private String feedbackNotes; 
 }

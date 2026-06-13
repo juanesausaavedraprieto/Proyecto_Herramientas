@@ -28,14 +28,13 @@ export interface Decision {
     title: string;
     criteria: Criterion[];
     options: Option[];
-
-    // 2. 🚨 EL FIX ESTÁ AQUÍ: Cambiamos 'string' por la interfaz 'User'
     user?: User | null;
-
     stressLevel?: number;
     urgencyScore?: number;
     evaluationMatrix?: Record<string, Record<string, number>>;
     recommendedOption?: any;
     justification?: string;
     finalScores?: Record<string, number>;
+    feedbackScore?: number;
+    feedbackNotes?: string;
 }

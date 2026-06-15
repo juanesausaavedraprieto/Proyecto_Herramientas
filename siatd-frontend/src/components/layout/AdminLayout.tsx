@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Outlet, useNavigate, Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { LayoutDashboard, Users, Activity, Settings, LogOut, Globe, Sun, Moon, ShieldAlert } from 'lucide-react';
+import { LayoutDashboard, Users, Activity, Settings, LogOut, Globe, Sun, Moon, ShieldAlert, MessageSquare } from 'lucide-react';
 
 export const AdminLayout = () => {
     const navigate = useNavigate();
@@ -44,6 +44,7 @@ export const AdminLayout = () => {
         { name: t('admin.dashboard'), icon: LayoutDashboard, path: '/admin' },
         { name: t('admin.users'), icon: Users, path: '/admin/users' },
         { name: t('admin.audit'), icon: Activity, path: '/admin/audit' },
+        { name: t('admin.feedback'), icon: MessageSquare, path: '/admin/users-feedback'},
         { name: t('admin.settings'), icon: Settings, path: '/admin/settings' },
         { name: t('admin.systemLogs'), icon: ShieldAlert, path: '/admin/system-logs' },
     ];

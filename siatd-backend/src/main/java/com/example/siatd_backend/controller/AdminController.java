@@ -182,4 +182,50 @@ public class AdminController {
         List<SystemAuditLog> logs = systemAuditLogRepository.findAllByOrderByChangedAtDesc();
         return ResponseEntity.ok(logs);
     }
+    // 🚨 NUEVO: Obtener todas las decisiones que ya tienen feedback para la auditoría del Admin
+    @GetMapping("/users-feedback")
+    public ResponseEntity<List<Map<String, Object>>> getUsersFeedback() {
+        try {
+            // Recuperamos todas las decisiones de la base de datos
+            List<com.example.siatd_backend.model.Decision> decisions = decisionRepository.findAll();
+            
+            // Filtramos únicamente las que ya tienen una calificación de estrellas asignada
+            List<Map<String, Object>> feedbackList = decisions.stream()
+                .filter(d -> d.getFeedbackScore() != null)
+                .map(d -> {
+                    Map<String, Object> item = new java.util.HashMap<>();
+                    item.put("id", d.getId());
+                    item.put("dilemaTitle", d.getTitle());
+                    item.put("winnerOption", d.getRecommendedOption() != null ? d.getRecommendedOption().getName() : "N/A");
+                    item.put("score", d.getFeedbackScore());
+                    item.put("notes", d.getFeedbackNotes());
+                    item.put("createdAt", d.getCreatedAt());
+                    
+                    // Datos del usuario que tomó la decisión
+                    Map<String, String> userMap = new java.util.HashMap<>();
+                    userMap.put("name", d.getUser() != null ? d.getUser().getName() : "Usuario Anónimo");
+                    userMap.put("email", d.getUser() != null ? d.getUser().getEmail() : "Sin correo");
+                    item.put("user", userMap);
+                    
+                    return item;
+                })
+                .sorted((a, b) -> ((java.time.LocalDateTime) b.get("createdAt")).compareTo((java.time.LocalDateTime) a.get("createdAt")))
+                .toList();
+
+            return ResponseEntity.ok(feedbackList);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    // 🚨 NUEVO: Permitir al Admin eliminar feedback corrupto o basura sin borrar la decisión entera
+    @PutMapping("/users-feedback/{id}/clear")
+    public ResponseEntity<Void> clearDecisionFeedback(@PathVariable UUID id) {
+        return decisionRepository.findById(id).map(decision -> {
+            decision.setFeedbackScore(null);
+            decision.setFeedbackNotes(null);
+            decisionRepository.save(decision);
+            return ResponseEntity.ok().<Void>build();
+        }).orElse(ResponseEntity.notFound().build());
+    }
 }

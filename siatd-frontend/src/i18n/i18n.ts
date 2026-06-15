@@ -19,6 +19,7 @@ const resources = {
                 dashboard: "Panel Principal",
                 users: "Gestión de Usuarios",
                 audit: "Auditoría Global",
+                feedback: "Retroalimentación de Usuarios",
                 settings: "Configuración SIATD",
                 systemLogs: "Registros del Sistema"
             },
@@ -44,6 +45,7 @@ const resources = {
                 dashboard: "Main Dashboard",
                 users: "User Management",
                 audit: "Global Audit",
+                feedback: "User Feedback",
                 settings: "SIATD Settings",
                 systemLogs: "System Logs"
             },

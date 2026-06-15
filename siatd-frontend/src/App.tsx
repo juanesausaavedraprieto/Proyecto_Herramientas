@@ -34,6 +34,7 @@ import { UserManagement } from './features/admin/UserManagement';
 import { GlobalAudit } from './features/admin/GlobalAudit';
 import { SystemSettings } from './features/admin/SystemSettings';
 import { SystemAuditLog } from './features/admin/SystemAuditLog';
+import { UserFeedbackAudit } from './features/admin/UserFeedbackAudit';
 
 function App() {
   // Leemos el rol del usuario desde el almacenamiento local al inicializar
@@ -82,6 +83,7 @@ function App() {
               <Route index element={<AdminDashboard />} />
               <Route path="users" element={<UserManagement />} />
               <Route path="audit" element={<GlobalAudit />} />
+              <Route path="/admin/users-feedback" element={<UserFeedbackAudit />} />
               <Route path="settings" element={<SystemSettings />} />
               <Route path="/admin/system-logs" element={<SystemAuditLog />} />
             </Route>

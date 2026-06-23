@@ -263,6 +263,31 @@ public class DecisionController {
         }
     }
 
+    // 🚨 NUEVO ENDPOINT: Para regenerar la Justificación Principal (El cuadro azul)
+    @PostMapping("/{decisionId}/regenerate-justification")
+    public ResponseEntity<?> regenerateJustification(@PathVariable UUID decisionId) {
+        try {
+            Decision decision = decisionService.getDecisionById(decisionId)
+                    .orElseThrow(() -> new RuntimeException("Decisión no encontrada"));
+
+            // Volvemos a pedirle a Gemini la justificación
+            String nuevaJustificacion = geminiAiService.generateDecisionJustification(
+                    decision.getTitle(),
+                    decision.getRecommendedOption().getName(),
+                    decision.getFinalScores()
+            );
+
+            // Guardamos y actualizamos la base de datos
+            decision.setJustification(nuevaJustificacion);
+            decisionService.updateDecision(decision);
+
+            return ResponseEntity.ok(java.util.Map.of("justification", nuevaJustificacion));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(java.util.Map.of("error", "No se pudo regenerar. Intenta más tarde."));
+        }
+    }
+
     // 🚨 NUEVO: Obtener decisiones que requieren feedback (Para el Frontend)
     @GetMapping("/pending-feedback")
     public ResponseEntity<List<Decision>> getPendingFeedback(Principal principal) {

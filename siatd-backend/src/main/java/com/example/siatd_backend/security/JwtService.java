@@ -65,6 +65,7 @@ public class JwtService {
                 .parseClaimsJws(token)
                 .getBody();
     }
+    // Decodifica la clave en Base64 y la convierte en una clave criptográfica HMAC
 
     private Key getSignInKey() {
         byte[] keyBytes = Decoders.BASE64.decode(SECRET_KEY);

@@ -68,8 +68,8 @@ export const StrategicRecommendations = ({ decisionId, rawRecommendations, onReg
                     onClick={handleRegenerate}
                     disabled={isRegenerating}
                     className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all border ${isFallback
-                            ? 'bg-amber-100 text-amber-700 border-amber-300 hover:bg-amber-200 animate-pulse'
-                            : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600'
+                        ? 'bg-amber-100 text-amber-700 border-amber-300 hover:bg-amber-200 animate-pulse'
+                        : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600'
                         } disabled:opacity-50`}
                     title="Solicitar a la IA que redacte nuevas estrategias"
                 >
@@ -131,6 +131,30 @@ export const Results = () => {
     const [originalWeights, setOriginalWeights] = useState<any[]>([]);
     const [simulatedScores, setSimulatedScores] = useState<Record<string, number> | null>(null);
     const [isSimulationActive, setIsSimulationActive] = useState(false);
+
+    // 🚨 ESTADO PARA REGENERAR LA JUSTIFICACIÓN
+    const [isRegeneratingJustification, setIsRegeneratingJustification] = useState(false);
+
+    // Detectamos si la IA falló y puso el texto genérico
+    const isJustificationFallback = data?.justification?.includes("El motor matemático sugiere fuertemente");
+
+    const handleRegenerateJustification = async () => {
+        setIsRegeneratingJustification(true);
+        toast.info("Redactando nueva justificación con IA...", { duration: 3000 });
+
+        try {
+            const decisionIdToUse = id || currentDecision?.id;
+            const response = await api.post(`/decisions/${decisionIdToUse}/regenerate-justification`);
+
+            // Actualizamos la pantalla en vivo
+            setData((prev: any) => ({ ...prev, justification: response.data.justification }));
+            toast.success("¡Justificación regenerada con éxito!");
+        } catch (error) {
+            toast.error("Los servidores de IA siguen ocupados. Intenta en un momento.");
+        } finally {
+            setIsRegeneratingJustification(false);
+        }
+    };
 
     const isHistoryView = !!id || location.pathname.includes('continue');
 
@@ -275,15 +299,33 @@ export const Results = () => {
                     <h2 className="text-3xl font-extrabold text-slate-800 dark:text-white tracking-tight">{data.title}</h2>
                     <p className="text-slate-500 dark:text-slate-400 text-sm">Resumen detallado del análisis mediante TOPSIS</p>
                 </div>
-                <button
-                    onClick={handleExportPDF}
-                    disabled={isExporting || isSimulationActive}
-                    className="flex items-center gap-2 bg-[#1e293b] dark:bg-slate-700 text-white px-5 py-2.5 rounded-xl hover:bg-slate-800 dark:hover:bg-slate-600 transition-all shadow-lg disabled:opacity-50"
-                    title={isSimulationActive ? "Restaura los pesos para poder exportar el informe oficial" : "Descargar en PDF"}
-                >
-                    {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                    {isExporting ? 'Generando...' : 'Exportar Informe PDF'}
-                </button>
+
+                {/* 🚨 AGRUPAMOS LOS BOTONES AQUÍ */}
+                <div className="flex flex-col gap-3 w-full md:w-auto">
+                    <button
+                        onClick={handleExportPDF}
+                        disabled={isExporting || isSimulationActive}
+                        className="flex items-center justify-center gap-2 bg-[#1e293b] dark:bg-slate-700 text-white px-5 py-2.5 rounded-xl hover:bg-slate-800 dark:hover:bg-slate-600 transition-all shadow-lg disabled:opacity-50 w-full"
+                        title={isSimulationActive ? "Restaura los pesos para poder exportar el informe oficial" : "Descargar en PDF"}
+                    >
+                        {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                        {isExporting ? 'Generando...' : 'Exportar Informe PDF'}
+                    </button>
+
+                    {/* 🚨 EL NUEVO BOTÓN DE RESCATE (Aparece abajo del PDF) */}
+                    <button
+                        onClick={handleRegenerateJustification}
+                        disabled={isRegeneratingJustification || isSimulationActive}
+                        className={`flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all border shadow-sm w-full ${isJustificationFallback
+                                ? 'bg-amber-100 text-amber-700 border-amber-300 hover:bg-amber-200 animate-pulse'
+                                : 'bg-white dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-500/30 hover:bg-indigo-50 dark:hover:bg-indigo-500/10'
+                            } disabled:opacity-50`}
+                        title="Pedir a la IA que redacte la conclusión nuevamente"
+                    >
+                        <RefreshCw className={`w-4 h-4 ${isRegeneratingJustification ? 'animate-spin' : ''}`} />
+                        {isRegeneratingJustification ? 'Consultando IA...' : isJustificationFallback ? 'Reintentar Justificación IA' : 'Generar Otra Justificación'}
+                    </button>
+                </div>
             </div>
 
             {/* --- ÁREA DE REPORTE --- */}

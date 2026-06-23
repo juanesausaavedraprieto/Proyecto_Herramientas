@@ -18,9 +18,9 @@ import java.util.function.Function;
 @Service
 public class JwtService {
 
-    // En un proyecto real, esta clave va en el application.yml
-    // Es una clave hexadecimal segura de 256 bits.
-    private static final String SECRET_KEY = "404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970";
+    // Se inyecta la clave desde application.properties en lugar de tenerla fija en el código
+    @Value("${jwt.secret-key}")
+    private String secretKey;
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);

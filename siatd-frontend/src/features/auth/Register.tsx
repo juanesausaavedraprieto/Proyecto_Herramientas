@@ -1,10 +1,10 @@
-// src/features/auth/Register.tsx
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Link } from 'react-router-dom'; // 👈 Eliminamos useNavigate
+import { Link } from 'react-router-dom';
 import { api } from '../../api/axios';
 import { Brain, User, Mail, Lock, Calendar, ArrowRight, Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const registerSchema = z.object({
     name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
@@ -34,6 +34,7 @@ const registerSchema = z.object({
 type RegisterForm = z.infer<typeof registerSchema>;
 
 export const Register = () => {
+    const { t } = useTranslation();
     const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<RegisterForm>({
         resolver: zodResolver(registerSchema),
     });
@@ -47,28 +48,22 @@ export const Register = () => {
                 birthDate: data.birthDate
             });
 
-            // Extraemos datos (por si el backend envía la info completa del nuevo usuario)
             const token = response.data.token;
             const role = response.data.role || 'USER';
 
             if (token) {
-                // 1. Limpieza total previa
                 localStorage.clear();
 
-                // 2. Guardamos la sesión
                 localStorage.setItem('token', token);
                 localStorage.setItem('userName', response.data.name || data.name);
                 localStorage.setItem('userEmail', response.data.email || data.email);
                 localStorage.setItem('userRole', role);
 
-                console.log("✅ Usuario registrado y sesión iniciada");
-
-                // 3. Forzamos recarga y redirigimos (Un nuevo usuario normalmente es Cliente)
                 window.location.replace('/');
             }
         } catch (error: any) {
             console.error("Error en el registro:", error);
-            alert(error.response?.data?.message || "Error al registrar usuario. Intenta con otro correo.");
+            alert(error.response?.data?.message || t('auth.register.errors.generic'));
         }
     };
 
@@ -79,31 +74,31 @@ export const Register = () => {
                     <div className="bg-blue-500 w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-lg">
                         <Brain className="w-6 h-6 text-white" />
                     </div>
-                    <h2 className="text-2xl font-bold">Crear Cuenta</h2>
-                    <p className="text-slate-300 text-sm">Únete al Sistema Inteligente de Toma de Decisiones.</p>
+                    <h2 className="text-2xl font-bold">{t('auth.register.title')}</h2>
+                    <p className="text-slate-300 text-sm">{t('auth.register.subtitle')}</p>
                 </div>
 
                 <form onSubmit={handleSubmit(onSubmit)} className="p-8 grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="md:col-span-2">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Nombre Completo</label>
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('auth.register.name')}</label>
                         <div className="relative mt-1">
                             <User className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
-                            <input {...register('name')} className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ej. Juan Saavedra" />
+                            <input {...register('name')} className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-blue-500" placeholder={t('auth.register.namePlaceholder')} />
                         </div>
                         {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
                     </div>
 
                     <div className="md:col-span-2">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Correo Electrónico</label>
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('auth.register.email')}</label>
                         <div className="relative mt-1">
                             <Mail className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
-                            <input {...register('email')} type="email" className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-blue-500" placeholder="usuario@correo.com" />
+                            <input {...register('email')} type="email" className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-blue-500" placeholder={t('auth.register.emailPlaceholder')} />
                         </div>
                         {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
                     </div>
 
                     <div className="md:col-span-2">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Fecha de Nacimiento</label>
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('auth.register.birthDate')}</label>
                         <div className="relative mt-1">
                             <Calendar className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
                             <input {...register('birthDate')} type="date" className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-blue-500" />
@@ -112,19 +107,19 @@ export const Register = () => {
                     </div>
 
                     <div>
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Contraseña</label>
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('auth.register.password')}</label>
                         <div className="relative mt-1">
                             <Lock className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
-                            <input {...register('password')} type="password" className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-blue-500" placeholder="••••••••" />
+                            <input {...register('password')} type="password" className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-blue-500" placeholder={t('auth.register.passwordPlaceholder')} />
                         </div>
                         {errors.password && <p className="text-red-500 text-xs mt-1 leading-tight">{errors.password.message}</p>}
                     </div>
 
                     <div>
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Confirmar</label>
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('auth.register.confirm')}</label>
                         <div className="relative mt-1">
                             <Lock className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
-                            <input {...register('confirmPassword')} type="password" className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-blue-500" placeholder="••••••••" />
+                            <input {...register('confirmPassword')} type="password" className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-blue-500" placeholder={t('auth.register.passwordPlaceholder')} />
                         </div>
                         {errors.confirmPassword && <p className="text-red-500 text-xs mt-1">{errors.confirmPassword.message}</p>}
                     </div>
@@ -134,14 +129,14 @@ export const Register = () => {
                         disabled={isSubmitting}
                         className="md:col-span-2 w-full flex justify-center items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition-all disabled:opacity-50 mt-4"
                     >
-                        {isSubmitting ? <Loader2 className="animate-spin" /> : 'Crear Cuenta y Entrar'}
+                        {isSubmitting ? <Loader2 className="animate-spin" /> : t('auth.register.submit')}
                         {!isSubmitting && <ArrowRight className="w-5 h-5" />}
                     </button>
                 </form>
 
                 <div className="p-6 bg-slate-50 text-center border-t border-gray-100">
                     <p className="text-sm text-slate-500">
-                        ¿Ya tienes cuenta? <Link to="/login" className="text-blue-600 font-bold hover:underline">Inicia sesión</Link>
+                        {t('auth.register.hasAccount')} <Link to="/login" className="text-blue-600 font-bold hover:underline">{t('auth.register.login')}</Link>
                     </p>
                 </div>
             </div>

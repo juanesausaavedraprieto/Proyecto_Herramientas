@@ -1,23 +1,23 @@
-// src/features/decision-maker/DefineOptions.tsx
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDecisionStore } from '../../store/useDecisionStore';
 import { api } from '../../api/axios';
 import { ListTodo, Plus, Trash2, ArrowRight, Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export const DefineOptions = () => {
+    const { t } = useTranslation();
     const { currentDecision, addOption } = useDecisionStore();
     const navigate = useNavigate();
 
     const [name, setName] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
-    // Redirección de seguridad
     if (!currentDecision) {
         return (
             <div className="text-center mt-20 transition-colors duration-200">
-                <h2 className="text-xl font-bold text-slate-800 dark:text-white">No hay una decisión activa</h2>
-                <button onClick={() => navigate('/new-decision')} className="mt-4 text-blue-600 dark:text-blue-400 underline">Volver al inicio</button>
+                <h2 className="text-xl font-bold text-slate-800 dark:text-white">{t('decision.criteria.noActive')}</h2>
+                <button onClick={() => navigate('/new-decision')} className="mt-4 text-blue-600 dark:text-blue-400 underline">{t('decision.criteria.goBack')}</button>
             </div>
         );
     }
@@ -33,12 +33,11 @@ export const DefineOptions = () => {
                 name
             });
 
-            // Guardamos la opción real con su ID de base de datos
             addOption(response.data);
             setName('');
         } catch (error) {
             console.error("Error al guardar la opción:", error);
-            alert("Error al conectar con el servidor.");
+            alert(t('decision.options.error'));
         } finally {
             setIsLoading(false);
         }
@@ -49,22 +48,21 @@ export const DefineOptions = () => {
             <div className="mb-8">
                 <h2 className="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-3">
                     <ListTodo className="w-7 h-7 text-purple-600 dark:text-purple-400" />
-                    Definir Alternativas
+                    {t('decision.options.title')}
                 </h2>
                 <p className="text-slate-500 dark:text-slate-400 mt-2">
-                    ¿Cuáles son las opciones que estás considerando para: <span className="font-semibold text-slate-700 dark:text-slate-300">{currentDecision.title}</span>?
+                    {t('decision.options.subtitle')} <span className="font-semibold text-slate-700 dark:text-slate-300">{currentDecision.title}</span>?
                 </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {/* Formulario */}
                 <div className="md:col-span-1 bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 h-fit transition-colors">
                     <form onSubmit={handleAdd} className="space-y-5">
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nueva Opción</label>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t('decision.options.newOption')}</label>
                             <input
                                 type="text"
-                                placeholder="Ej: Trabajar en Google, Emprender..."
+                                placeholder={t('decision.options.optionPlaceholder')}
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                                 disabled={isLoading}
@@ -77,18 +75,17 @@ export const DefineOptions = () => {
                             disabled={!name.trim() || isLoading}
                             className="w-full flex justify-center items-center gap-2 bg-slate-800 hover:bg-slate-900 dark:bg-purple-600 dark:hover:bg-purple-700 text-white font-semibold py-2.5 rounded-lg transition-colors disabled:opacity-50"
                         >
-                            {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Plus className="w-5 h-5" /> Agregar Opción</>}
+                            {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Plus className="w-5 h-5" /> {t('decision.options.add')}</>}
                         </button>
                     </form>
                 </div>
 
-                {/* Lista */}
                 <div className="md:col-span-2 bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 transition-colors">
-                    <h3 className="text-lg font-semibold text-slate-800 dark:text-white mb-4 border-b border-gray-100 dark:border-slate-700 pb-2">Alternativas Agregadas</h3>
+                    <h3 className="text-lg font-semibold text-slate-800 dark:text-white mb-4 border-b border-gray-100 dark:border-slate-700 pb-2">{t('decision.options.selected')}</h3>
 
                     {currentDecision.options.length === 0 ? (
                         <div className="text-center py-10 text-slate-400 dark:text-slate-500 border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-xl">
-                            Agrega las opciones que deseas evaluar.
+                            {t('decision.options.empty')}
                         </div>
                     ) : (
                         <ul className="space-y-3">
@@ -109,7 +106,7 @@ export const DefineOptions = () => {
                             disabled={currentDecision.options.length < 2}
                             className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors disabled:opacity-50"
                         >
-                            Siguiente: Evaluar Opciones <ArrowRight className="w-5 h-5" />
+                            {t('decision.options.next')} <ArrowRight className="w-5 h-5" />
                         </button>
                     </div>
                 </div>

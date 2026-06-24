@@ -40,10 +40,10 @@ export const MainLayout = () => {
         const newLang = i18n.language === 'es' ? 'en' : 'es';
         i18n.changeLanguage(newLang);
     };
+
     const handleJoinRoom = () => {
-        const roomId = window.prompt("Ingresa el ID o código de la Sala Colaborativa:");
+        const roomId = window.prompt(t('sidebar.joinRoom'));
         if (roomId && roomId.trim() !== "") {
-            // Redirigir al usuario a la sala
             window.location.href = `/collab/${roomId.trim()}`;
         }
     };
@@ -58,10 +58,8 @@ export const MainLayout = () => {
 
     return (
         <div className="flex h-screen bg-gray-50 dark:bg-slate-900 font-sans text-slate-800 dark:text-slate-200 transition-colors duration-200">
-            {/* --- SIDEBAR --- */}
             <aside className="w-64 bg-white dark:bg-slate-800 border-r border-gray-200 dark:border-slate-700 flex flex-col transition-colors duration-200">
 
-                {/* Logo */}
                 <div className="p-6 flex items-center gap-3">
                     <div className="bg-blue-600 p-2 rounded-lg shadow-md shadow-blue-200 dark:shadow-none">
                         <Brain className="w-6 h-6 text-white" />
@@ -69,7 +67,6 @@ export const MainLayout = () => {
                     <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">SIATD Experto</h1>
                 </div>
 
-                {/* Navegación principal */}
                 <nav className="flex-1 px-4 py-4 overflow-y-auto">
                     <div className="space-y-1">
                         {menuItems.map((item) => {
@@ -90,7 +87,6 @@ export const MainLayout = () => {
                         })}
                     </div>
 
-                    {/* 🚨 LÓGICA CONDICIONAL: ADMIN */}
                     {userRole === 'ADMIN' && (
                         <div className="mt-8 pt-4 border-t border-gray-100 dark:border-slate-700">
                             <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mb-2 uppercase px-3 tracking-widest">
@@ -110,10 +106,8 @@ export const MainLayout = () => {
                     )}
                 </nav>
 
-                {/* SECCIÓN DE USUARIO (INFERIOR) */}
                 <div className="p-4 border-t border-gray-100 dark:border-slate-700 relative">
 
-                    {/* Menú Desplegable */}
                     {isProfileOpen && (
                         <div className="absolute bottom-full left-4 right-4 mb-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl shadow-xl overflow-hidden animate-in fade-in slide-in-from-bottom-2">
                             <button
@@ -137,7 +131,6 @@ export const MainLayout = () => {
                                 {t('sidebar.settings')}
                             </button>
 
-                            {/* Botón de Idioma */}
                             <button
                                 onClick={toggleLanguage}
                                 className="w-full flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors text-sm text-slate-600 dark:text-slate-300 border-t border-gray-50 dark:border-slate-700/50 font-semibold"
@@ -160,10 +153,9 @@ export const MainLayout = () => {
                         className="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-xl transition-all w-full text-left font-medium"
                     >
                         <Users className="w-5 h-5" />
-                        <span>Unirse a Sala</span>
+                        <span>{t('sidebar.joinRoom')}</span>
                     </button>
 
-                    {/* Botón perfil */}
                     <button
                         onClick={() => setIsProfileOpen(!isProfileOpen)}
                         className={`w-full flex items-center gap-3 p-2 rounded-xl transition-all ${isProfileOpen ? 'bg-gray-100 dark:bg-slate-700' : 'hover:bg-gray-50 dark:hover:bg-slate-700'
@@ -175,7 +167,7 @@ export const MainLayout = () => {
                         <div className="flex-1 text-left overflow-hidden">
                             <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{userName}</p>
                             <p className="text-[10px] text-slate-400 dark:text-slate-400 font-bold uppercase tracking-widest">
-                                {userRole === 'ADMIN' ? 'Administrador' : 'Cuenta Activa'}
+                                {userRole === 'ADMIN' ? t('sidebar.roleAdmin') : t('sidebar.roleActive')}
                             </p>
                         </div>
                         <ChevronUp
@@ -186,16 +178,15 @@ export const MainLayout = () => {
                 </div>
             </aside>
 
-            {/* --- Principal --- */}
             <main className="flex-1 flex flex-col overflow-hidden">
                 <header className="h-16 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 flex items-center px-8 justify-between z-10 transition-colors duration-200">
                     <h2 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-                        Área de Trabajo
+                        {t('sidebar.area')}
                     </h2>
                     <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2 px-3 py-1 bg-emerald-50 dark:bg-emerald-500/10 rounded-full border border-emerald-100 dark:border-emerald-500/20">
                             <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                            <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400">SERVIDOR ACTIVO</span>
+                            <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400">{t('sidebar.serverActive')}</span>
                         </div>
                     </div>
                 </header>

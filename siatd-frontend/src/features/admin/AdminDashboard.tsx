@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { Users, BrainCircuit, Activity, TrendingUp, Loader2 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { api } from '../../api/axios';
+import { useTranslation } from 'react-i18next';
 
 export const AdminDashboard = () => {
+    const { t } = useTranslation();
     const [stats, setStats] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
@@ -24,15 +26,15 @@ export const AdminDashboard = () => {
     if (loading) return (
         <div className="flex flex-col items-center justify-center h-64 transition-colors duration-200">
             <Loader2 className="w-10 h-10 animate-spin text-indigo-600 dark:text-indigo-400" />
-            <p className="mt-4 text-slate-500 dark:text-slate-400 font-medium">Cargando métricas en tiempo real...</p>
+            <p className="mt-4 text-slate-500 dark:text-slate-400 font-medium">{t('admin.loadingSettings')}</p>
         </div>
     );
 
     return (
         <div className="max-w-7xl mx-auto animate-in fade-in duration-500 transition-colors duration-200">
             <div className="mb-8">
-                <h1 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">Visión General del Sistema</h1>
-                <p className="text-slate-500 dark:text-slate-400 mt-1">Monitoreo de actividad y rendimiento del motor TOPSIS.</p>
+                <h1 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">{t('admin.dashboardTitle')}</h1>
+                <p className="text-slate-500 dark:text-slate-400 mt-1">{t('admin.dashboardSub')}</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -44,7 +46,7 @@ export const AdminDashboard = () => {
                     </div>
                     <div>
                         <h3 className="text-3xl font-black text-slate-800 dark:text-white">{stats?.totalUsers || 0}</h3>
-                        <p className="text-sm font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Usuarios Registrados</p>
+                        <p className="text-sm font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{t('admin.registeredUsers')}</p>
                     </div>
                 </div>
 
@@ -56,7 +58,7 @@ export const AdminDashboard = () => {
                     </div>
                     <div>
                         <h3 className="text-3xl font-black text-slate-800 dark:text-white">{stats?.totalDecisions || 0}</h3>
-                        <p className="text-sm font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Decisiones Procesadas</p>
+                        <p className="text-sm font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{t('admin.decisionsProcessed')}</p>
                     </div>
                 </div>
 
@@ -68,23 +70,23 @@ export const AdminDashboard = () => {
                     </div>
                     <div>
                         <h3 className="text-3xl font-black text-emerald-800 dark:text-emerald-400">{stats?.serverStatus || "OK"}</h3>
-                        <p className="text-sm font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Estado del Servidor</p>
+                        <p className="text-sm font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">{t('admin.serverStatus')}</p>
                     </div>
                 </div>
 
                 <div className="bg-gradient-to-br from-slate-800 to-slate-900 dark:from-slate-900 dark:to-slate-950 p-6 rounded-3xl shadow-lg flex flex-col gap-4 text-white relative overflow-hidden transition-colors">
                     <div className="relative z-10">
-                        <p className="text-sm font-semibold text-indigo-300 dark:text-indigo-400 uppercase tracking-wider mb-2">Motor Matemático</p>
-                        <h3 className="text-xl font-bold mb-1">Algoritmo TOPSIS Activo</h3>
-                        <p className="text-xs text-slate-400 dark:text-slate-500">Evaluaciones multidimensionales mediante distancias euclidianas.</p>
+                        <p className="text-sm font-semibold text-indigo-300 dark:text-indigo-400 uppercase tracking-wider mb-2">{t('admin.mathEngine')}</p>
+                        <h3 className="text-xl font-bold mb-1">{t('admin.mathEngineDesc')}</h3>
+                        <p className="text-xs text-slate-400 dark:text-slate-500">{t('admin.mathEngineSub')}</p>
                     </div>
                 </div>
             </div>
 
             <div className="bg-white dark:bg-slate-800 p-8 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-sm mb-8 transition-colors">
                 <div className="mb-6">
-                    <h3 className="text-xl font-bold text-slate-800 dark:text-white">Histórico de Carga de Análisis</h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">Volumen comparativo de problemas resueltos.</p>
+                    <h3 className="text-xl font-bold text-slate-800 dark:text-white">{t('admin.activityHistory')}</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">{t('admin.activitySub')}</p>
                 </div>
                 <div className="h-[300px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
@@ -118,7 +120,7 @@ export const AdminDashboard = () => {
                                     borderRadius: '12px',
                                     border: 'none',
                                     boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
-                                    backgroundColor: 'rgba(255, 255, 255, 0.95)' // Mantener claro para mejor contraste
+                                    backgroundColor: 'rgba(255, 255, 255, 0.95)'
                                 }}
                                 itemStyle={{ color: '#1e293b', fontWeight: 'bold' }}
                             />

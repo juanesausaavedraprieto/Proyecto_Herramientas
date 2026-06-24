@@ -1,4 +1,3 @@
-// src/features/auth/Login.tsx
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -7,8 +6,8 @@ import { api } from '../../api/axios';
 import { Link } from 'react-router-dom';
 import { Brain, Lock, Mail, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
-// Definimos el esquema de validación estricto
 const loginSchema = z.object({
     email: z.string().min(1, 'El correo es obligatorio').email('Formato de correo inválido'),
     password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
@@ -17,6 +16,7 @@ const loginSchema = z.object({
 type LoginForm = z.infer<typeof loginSchema>;
 
 export const Login = () => {
+    const { t } = useTranslation();
     const [showPassword, setShowPassword] = useState(false);
 
     const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginForm>({
@@ -30,30 +30,22 @@ export const Login = () => {
                 password: data.password
             });
 
-            console.log("📦 Datos recibidos del server:", response.data);
-
             const { token, name, email, role } = response.data;
 
-            // Verificamos si el backend respondió OK pero no mandó token
             if (!token) {
                 toast.error("Credenciales incorrectas. Verifica tu correo y contraseña.");
                 return;
             }
 
-            // 1. 🚨 LIMPIAMOS BASURA DE SESIONES ANTERIORES
             localStorage.clear();
 
-            // 2. Guardar datos reales del usuario
             localStorage.setItem('token', token);
             localStorage.setItem('userName', name || 'Usuario');
             localStorage.setItem('userEmail', email || data.email);
             localStorage.setItem('userRole', role || 'USER');
 
-            console.log("✅ Datos de sesión guardados correctamente");
-
             toast.success("¡Bienvenido! Iniciando sesión...");
 
-            // 3. 🚨 EL HARD RESET: Redirigimos destruyendo la memoria anterior
             setTimeout(() => {
                 if (role === 'ADMIN') {
                     window.location.replace('/admin');
@@ -63,37 +55,34 @@ export const Login = () => {
             }, 800);
 
         } catch (err: any) {
-            console.error("❌ Error atrapado en login:", err);
+            console.error("Error atrapado en login:", err);
 
-            // 1. Error de Red (Servidor caído o CORS)
             if (err.code === 'ERR_NETWORK') {
-                toast.error("Error de conexión. Verifica que el servidor esté encendido.");
+                toast.error(t('auth.login.errors.network'));
                 return;
             }
 
-            // 2. Error HTTP (401, 403, 404, etc.)
             if (err.response) {
                 const status = err.response.status;
                 const backendData = err.response.data;
 
                 if (status === 401 || status === 403) {
-                    toast.error("Correo o contraseña incorrectos.");
+                    toast.error(t('auth.login.errors.invalidCredentials'));
                 } else if (typeof backendData === 'string') {
-                    toast.error(backendData); // Si Spring Boot mandó un texto plano
+                    toast.error(backendData);
                 } else if (backendData?.message || backendData?.error) {
-                    toast.error(backendData.message || backendData.error); // Si mandó JSON
+                    toast.error(backendData.message || backendData.error);
                 } else {
-                    toast.error("Ocurrió un error al intentar iniciar sesión.");
+                    toast.error(t('auth.login.errors.generic'));
                 }
             } else {
-                toast.error("Error desconocido al validar tus datos.");
+                toast.error(t('auth.login.errors.unknown'));
             }
         }
     };
 
-    // Opcional: Si quieres que avise también cuando el formulario tiene errores de validación
     const onError = () => {
-        toast.warning("Por favor, completa los campos correctamente.");
+        toast.warning(t('auth.login.errors.validation'));
     };
 
     return (
@@ -103,36 +92,35 @@ export const Login = () => {
                     <div className="bg-blue-500 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
                         <Brain className="w-8 h-8 text-white" />
                     </div>
-                    <h2 className="text-2xl font-bold">Bienvenido a SIATD</h2>
-                    <p className="text-slate-300 mt-2 text-sm">Ingresa a tu cuenta para continuar evaluando decisiones.</p>
+                    <h2 className="text-2xl font-bold">{t('auth.login.title')}</h2>
+                    <p className="text-slate-300 mt-2 text-sm">{t('auth.login.subtitle')}</p>
                 </div>
 
                 <div className="p-8">
-                    {/* Le pasamos onError a handleSubmit */}
                     <form onSubmit={handleSubmit(onSubmit, onError)} className="space-y-5">
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Correo Electrónico</label>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">{t('auth.login.email')}</label>
                             <div className="relative">
                                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                                 <input
                                     {...register('email')}
                                     type="email"
                                     className={`w-full pl-10 pr-4 py-3 rounded-xl border outline-none transition-all ${errors.email ? 'border-red-400 focus:ring-red-500' : 'border-gray-200 focus:ring-blue-500 focus:border-blue-500'}`}
-                                    placeholder="ejemplo@correo.com"
+                                    placeholder={t('auth.login.emailPlaceholder')}
                                 />
                             </div>
                             {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Contraseña</label>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">{t('auth.login.password')}</label>
                             <div className="relative">
                                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                                 <input
                                     {...register('password')}
                                     type={showPassword ? "text" : "password"}
                                     className={`w-full pl-10 pr-12 py-3 rounded-xl border outline-none transition-all ${errors.password ? 'border-red-400 focus:ring-red-500' : 'border-gray-200 focus:ring-blue-500 focus:border-blue-500'}`}
-                                    placeholder="••••••••"
+                                    placeholder={t('auth.login.passwordPlaceholder')}
                                 />
                                 <button
                                     type="button"
@@ -150,13 +138,13 @@ export const Login = () => {
                             disabled={isSubmitting}
                             className="w-full flex justify-center items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl transition-all disabled:opacity-70 mt-6 shadow-lg shadow-blue-200"
                         >
-                            {isSubmitting ? 'Iniciando sesión...' : 'Ingresar al Sistema'}
+                            {isSubmitting ? t('auth.login.submitting') : t('auth.login.submit')}
                             {!isSubmitting && <ArrowRight className="w-5 h-5" />}
                         </button>
                     </form>
 
                     <p className="text-center text-sm text-slate-500 mt-6">
-                        ¿No tienes una cuenta? <Link to="/register" className="text-blue-600 font-semibold hover:underline">Regístrate aquí</Link>
+                        {t('auth.login.noAccount')} <Link to="/register" className="text-blue-600 font-semibold hover:underline">{t('auth.login.register')}</Link>
                     </p>
                 </div>
             </div>

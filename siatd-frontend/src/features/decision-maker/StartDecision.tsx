@@ -1,17 +1,15 @@
-// src/features/decision-maker/StartDecision.tsx
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDecisionStore } from '../../store/useDecisionStore';
 import { api } from '../../api/axios';
 import { Target, Loader2, Activity, AlertTriangle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export const StartDecision = () => {
+    const { t } = useTranslation();
     const [title, setTitle] = useState('');
-
-    // 🚨 NUEVOS ESTADOS PARA ESTRÉS Y URGENCIA (Por defecto en 3 - Nivel Medio)
     const [stressLevel, setStressLevel] = useState(3);
     const [urgencyScore, setUrgencyScore] = useState(3);
-
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -26,7 +24,6 @@ export const StartDecision = () => {
         setError(null);
 
         try {
-            // 🚨 AHORA ENVIAMOS LOS DATOS REALES DE ESTRÉS Y URGENCIA AL BACKEND
             const response = await api.post('/decisions', {
                 title: title,
                 status: 'DRAFT',
@@ -41,7 +38,7 @@ export const StartDecision = () => {
 
         } catch (err) {
             console.error("Error al crear decisión:", err);
-            setError('Hubo un problema al conectar con el servidor. Verifica que Spring Boot esté corriendo.');
+            setError(t('decision.start.error'));
         } finally {
             setIsLoading(false);
         }
@@ -56,8 +53,8 @@ export const StartDecision = () => {
                         <Target className="w-8 h-8" />
                     </div>
                     <div>
-                        <h2 className="text-2xl sm:text-3xl font-black text-slate-800 dark:text-white tracking-tight">Definir el Problema</h2>
-                        <p className="text-slate-500 dark:text-slate-400 text-sm sm:text-base mt-1">¿Qué decisión importante necesitas tomar hoy?</p>
+                        <h2 className="text-2xl sm:text-3xl font-black text-slate-800 dark:text-white tracking-tight">{t('decision.start.title')}</h2>
+                        <p className="text-slate-500 dark:text-slate-400 text-sm sm:text-base mt-1">{t('decision.start.subtitle')}</p>
                     </div>
                 </div>
 
@@ -69,15 +66,14 @@ export const StartDecision = () => {
                 )}
 
                 <form onSubmit={handleStart} className="space-y-8">
-                    {/* Input del Título */}
                     <div>
                         <label htmlFor="title" className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-3 uppercase tracking-wider">
-                            Pregunta o Dilema Principal
+                            {t('decision.start.question')}
                         </label>
                         <input
                             id="title"
                             type="text"
-                            placeholder="Ej: ¿Qué oferta de trabajo debería aceptar?"
+                            placeholder={t('decision.start.questionPlaceholder')}
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                             disabled={isLoading}
@@ -87,11 +83,10 @@ export const StartDecision = () => {
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-4 border-t border-slate-100 dark:border-slate-700">
-                        {/* Selector de Estrés */}
                         <div className="space-y-3">
                             <label className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                                 <Activity className="w-4 h-4 text-orange-500" />
-                                Nivel de Estrés
+                                {t('decision.start.stress')}
                             </label>
                             <div className="flex justify-between gap-2">
                                 {[1, 2, 3, 4, 5].map((num) => (
@@ -109,16 +104,15 @@ export const StartDecision = () => {
                                 ))}
                             </div>
                             <div className="flex justify-between text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest px-1">
-                                <span>Relajado</span>
-                                <span>Muy Estresado</span>
+                                <span>{t('decision.start.stressLow')}</span>
+                                <span>{t('decision.start.stressHigh')}</span>
                             </div>
                         </div>
 
-                        {/* Selector de Urgencia */}
                         <div className="space-y-3">
                             <label className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                                 <AlertTriangle className="w-4 h-4 text-red-500" />
-                                Nivel de Urgencia
+                                {t('decision.start.urgency')}
                             </label>
                             <div className="flex justify-between gap-2">
                                 {[1, 2, 3, 4, 5].map((num) => (
@@ -136,8 +130,8 @@ export const StartDecision = () => {
                                 ))}
                             </div>
                             <div className="flex justify-between text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest px-1">
-                                <span>Con Tiempo</span>
-                                <span>Para Ayer</span>
+                                <span>{t('decision.start.urgencyLow')}</span>
+                                <span>{t('decision.start.urgencyHigh')}</span>
                             </div>
                         </div>
                     </div>
@@ -150,10 +144,10 @@ export const StartDecision = () => {
                         {isLoading ? (
                             <>
                                 <Loader2 className="w-6 h-6 animate-spin" />
-                                Creando Espacio de Trabajo...
+                                {t('decision.start.submitting')}
                             </>
                         ) : (
-                            'Comenzar Análisis Estructurado'
+                            t('decision.start.submit')
                         )}
                     </button>
                 </form>

@@ -8,7 +8,6 @@ export const AdminLayout = () => {
     const location = useLocation();
     const { t, i18n } = useTranslation();
 
-    // --- Lógica del Modo Oscuro ---
     const [isDarkMode, setIsDarkMode] = useState(() => {
         if (typeof window !== 'undefined') {
             return localStorage.getItem('theme') === 'dark' ||
@@ -28,7 +27,6 @@ export const AdminLayout = () => {
     }, [isDarkMode]);
 
     const toggleDarkMode = () => setIsDarkMode(!isDarkMode);
-    // ------------------------------
 
     const handleLogout = () => {
         localStorage.clear();
@@ -50,14 +48,12 @@ export const AdminLayout = () => {
     ];
 
     return (
-        // Agregamos clases 'dark:' al contenedor principal para que reaccione al cambio
         <div className="flex h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-200">
 
-            {/* Sidebar Exclusivo del Admin */}
             <aside className="w-64 bg-slate-900 dark:bg-slate-950 text-slate-300 flex flex-col transition-colors duration-200 border-r border-slate-800 dark:border-slate-800/50">
                 <div className="p-6">
                     <h1 className="text-2xl font-black text-white tracking-tight">SIATD <span className="text-indigo-500">Admin</span></h1>
-                    <p className="text-xs font-bold text-slate-500 uppercase mt-2 tracking-widest">Centro de Control</p>
+                    <p className="text-xs font-bold text-slate-500 uppercase mt-2 tracking-widest">{t('admin.dashboard')}</p>
                 </div>
 
                 <nav className="flex-1 px-4 space-y-2 mt-4">
@@ -80,16 +76,14 @@ export const AdminLayout = () => {
 
                 <div className="p-4 border-t border-slate-800 flex flex-col gap-2">
 
-                    {/* Botón de Modo Oscuro / Claro */}
                     <button
                         onClick={toggleDarkMode}
                         className="flex items-center justify-center gap-2 w-full px-4 py-2 text-sm text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-colors font-bold uppercase tracking-wider"
                     >
                         {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                        {isDarkMode ? 'Modo Claro' : 'Modo Oscuro'}
+                        {isDarkMode ? t('settings.darkMode') : t('settings.darkMode')}
                     </button>
 
-                    {/* Botón de Idioma */}
                     <button
                         onClick={toggleLanguage}
                         className="flex items-center justify-center gap-2 w-full px-4 py-2 text-sm text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-colors font-bold uppercase tracking-wider"
@@ -108,7 +102,6 @@ export const AdminLayout = () => {
                 </div>
             </aside>
 
-            {/* Contenido Principal (Outlet) */}
             <main className="flex-1 overflow-y-auto p-8 transition-colors duration-200">
                 <Outlet />
             </main>

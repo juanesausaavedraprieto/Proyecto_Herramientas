@@ -1,70 +1,47 @@
 import { useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useDecisionStore } from '../../store/useDecisionStore';
 import { api } from '../../api/axios';
 import { Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export const ContinueDecision = () => {
+    const { t } = useTranslation();
     const { id } = useParams();
     const navigate = useNavigate();
+    const { setDecision } = useDecisionStore();
 
     useEffect(() => {
-        const fetchAndResume = async () => {
-            if (!id) {
-                navigate('/');
-                return;
-            }
-
+        const loadDecision = async () => {
+            if (!id) return;
             try {
-                // 1. Obtenemos la decisión parcial desde el backend
                 const response = await api.get(`/decisions/${id}`);
                 const decision = response.data;
 
-                // 2. Cargamos los datos en el estado global (Zustand)
-                // 🚨 CORRECCIÓN: Metemos criteria y options DENTRO de currentDecision también
-                useDecisionStore.setState({
-                    currentDecision: {
-                        id: decision.id,
-                        title: decision.title,
-                        stressLevel: decision.stressLevel || 1,
-                        urgencyScore: decision.urgencyScore || 1,
-                        criteria: decision.criteria || [], // <-- AQUÍ
-                        options: decision.options || []    // <-- Y AQUÍ
-                    },
-                    criteria: decision.criteria || [],
-                    options: decision.options || []
-                });
+                setDecision(decision);
 
-                // 3. Enrutamiento Inteligente (Router)
-                if (!decision.criteria || decision.criteria.length === 0) {
-                    // Falta definir criterios
+                if (decision.criteria?.length === 0) {
                     navigate('/define-criteria');
-                } else if (!decision.options || decision.options.length === 0) {
-                    // Faltan opciones
+                } else if (decision.options?.length === 0) {
                     navigate('/define-options');
-                } else if (decision.evaluationMatrix && Object.keys(decision.evaluationMatrix).length > 0) {
-                    // 🚨 NUEVA REGLA: Si la matriz ya tiene datos guardados, ¡la decisión está terminada!
-                    navigate(`/results/${decision.id}`);
-                } else {
-                    // Si tiene opciones y criterios pero la matriz está vacía, a calificar
+                } else if (!decision.evaluationMatrix || Object.keys(decision.evaluationMatrix).length === 0) {
                     navigate('/evaluation-matrix');
+                } else {
+                    navigate('/results');
                 }
-
             } catch (error) {
-                console.error('Error al reanudar la decisión:', error);
-                alert('Hubo un error al cargar el progreso de esta decisión.');
+                console.error("Error al cargar decisión:", error);
                 navigate('/');
             }
         };
 
-        fetchAndResume();
-    }, [id, navigate]);
+        loadDecision();
+    }, [id, navigate, setDecision]);
 
     return (
-        <div className="flex flex-col items-center justify-center h-[60vh] animate-in fade-in duration-500">
-            <Loader2 className="w-12 h-12 animate-spin text-blue-600 mb-6" />
-            <h2 className="text-2xl font-black text-slate-800 tracking-tight">Recuperando tu progreso...</h2>
-            <p className="text-slate-500 mt-2 font-medium">Preparando el entorno de análisis experto</p>
+        <div className="flex flex-col items-center justify-center h-64">
+            <Loader2 className="w-10 h-10 animate-spin text-blue-500" />
+            <p className="mt-4 text-slate-500 font-medium">{t('decision.results.loading')}</p>
         </div>
     );
 };

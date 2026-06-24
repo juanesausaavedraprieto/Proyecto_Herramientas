@@ -1,4 +1,3 @@
-// src/features/decision-maker/EvaluationMatrix.tsx
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDecisionStore } from '../../store/useDecisionStore';
@@ -6,14 +5,15 @@ import { Calculator, ArrowRight, AlertCircle, Loader2, Sparkles, Users, ShieldAl
 import { api } from '../../api/axios';
 import { toast } from 'sonner';
 import { useNotificationStore } from '../../store/useNotificationStore';
+import { useTranslation } from 'react-i18next';
 
 export const EvaluationMatrix = () => {
+    const { t } = useTranslation();
     const { currentDecision, updateScore, setRecommendation } = useDecisionStore();
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
     const [isAiLoading, setIsAiLoading] = useState(false);
 
-    // 🚨 ESTADOS PARA EL PANEL DE RIESGOS
     const [earlyRisks, setEarlyRisks] = useState<any[]>([]);
     const [isRisksLoading, setIsRisksLoading] = useState(false);
     const [showRisksPanel, setShowRisksPanel] = useState(false);
@@ -24,8 +24,8 @@ export const EvaluationMatrix = () => {
         return (
             <div className="text-center mt-20 transition-colors duration-200">
                 <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-                <h2 className="text-xl font-bold text-slate-800 dark:text-white">Faltan datos para la matriz</h2>
-                <button onClick={() => navigate('/new-decision')} className="mt-4 text-blue-600 dark:text-blue-400 underline">Volver al inicio</button>
+                <h2 className="text-xl font-bold text-slate-800 dark:text-white">{t('decision.matrix.missingData')}</h2>
+                <button onClick={() => navigate('/new-decision')} className="mt-4 text-blue-600 dark:text-blue-400 underline">{t('decision.criteria.goBack')}</button>
             </div>
         );
     }
@@ -35,37 +35,34 @@ export const EvaluationMatrix = () => {
         updateScore(optionId, criterionId, safeValue);
     };
 
-    // 🛡️ NUEVO: Función para pedir los riesgos a Gemini
     const handleFetchRisks = async () => {
         if (!currentDecision) return;
 
-        // Si ya los tenemos, solo abrimos/cerramos el panel
         if (earlyRisks.length > 0) {
             setShowRisksPanel(!showRisksPanel);
             return;
         }
 
         setIsRisksLoading(true);
-        toast.info("Consultando matriz de riesgos preventivos...");
+        toast.info(t('decision.matrix.loadingRisks'));
 
         try {
             const response = await api.get(`/decisions/${currentDecision.id}/risks`);
             setEarlyRisks(response.data);
             setShowRisksPanel(true);
-            toast.success("Riesgos identificados con éxito.");
+            toast.success(t('decision.matrix.risksSuccess'));
         } catch (error) {
             console.error("Error al obtener riesgos:", error);
-            toast.error("No se pudo cargar el análisis de riesgos.");
+            toast.error(t('decision.matrix.risksError'));
         } finally {
             setIsRisksLoading(false);
         }
     };
 
     const handleAiAutocomplete = async () => {
-        // ... (Tu código intacto de handleAiAutocomplete)
         if (!currentDecision) return;
         setIsAiLoading(true);
-        toast.info("La IA está analizando tu dilema...", { duration: 3000 });
+        toast.info(t('decision.matrix.aiAnalyzing'), { duration: 3000 });
 
         try {
             const response = await api.post(`/decisions/${currentDecision.id}/auto-evaluate`);
@@ -123,20 +120,19 @@ export const EvaluationMatrix = () => {
             });
 
             if (matchCount > 0) {
-                toast.success(`¡Matriz autocompletada con éxito! (${matchCount} valores)`);
+                toast.success(t('decision.matrix.aiSuccess'));
             } else {
-                toast.warning("La IA respondió, pero no coincidieron los nombres.");
+                toast.warning(t('decision.matrix.aiNoMatch'));
             }
 
         } catch (error) {
-            toast.error("La IA falló al generar la matriz. Intenta de nuevo.");
+            toast.error(t('decision.matrix.aiError'));
         } finally {
             setIsAiLoading(false);
         }
     };
 
     const handleCalculate = async () => {
-        // ... (Tu código intacto de handleCalculate)
         if (!currentDecision) return;
         setIsLoading(true);
 
@@ -156,7 +152,7 @@ export const EvaluationMatrix = () => {
 
             setRecommendation(response.data);
             navigate('/results');
-            toast.success("¡Análisis TOPSIS completado!");
+            toast.success(t('decision.matrix.topsisComplete'));
 
         } catch (error: any) {
             const errorMessage = error.response?.data?.message;
@@ -164,7 +160,7 @@ export const EvaluationMatrix = () => {
                 toast.error(errorMessage, { duration: 6000 });
                 addNotification(errorMessage);
             } else {
-                toast.error("Ocurrió un error inesperado al procesar la matriz.");
+                toast.error(t('decision.matrix.topsisError'));
             }
         } finally {
             setIsLoading(false);
@@ -177,23 +173,22 @@ export const EvaluationMatrix = () => {
                 <div>
                     <h2 className="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-3">
                         <Calculator className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
-                        Matriz de Evaluación
+                        {t('decision.matrix.title')}
                     </h2>
                     <p className="text-slate-500 dark:text-slate-400 mt-2">
-                        Califica del 1 al 10 qué tan buena es cada opción respecto a cada criterio.
+                        {t('decision.matrix.subtitle')}
                     </p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-                    {/* 🛡️ NUEVO BOTÓN: Consultar Riesgos */}
                     <button
                         onClick={handleFetchRisks}
                         disabled={isRisksLoading}
                         className="flex items-center justify-center gap-2 bg-amber-100 hover:bg-amber-200 dark:bg-amber-500/20 dark:hover:bg-amber-500/30 text-amber-700 dark:text-amber-300 font-bold py-3 px-4 rounded-lg transition-colors disabled:opacity-50 border border-amber-200 dark:border-amber-500/30"
-                        title="Identificar puntos ciegos antes de evaluar"
+                        title={t('decision.matrix.evaluateRisks')}
                     >
                         {isRisksLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <ShieldAlert className="w-5 h-5" />}
-                        <span className="hidden sm:inline">Evaluar Riesgos</span>
+                        <span className="hidden sm:inline">{t('decision.matrix.evaluateRisks')}</span>
                     </button>
 
                     <button
@@ -202,7 +197,7 @@ export const EvaluationMatrix = () => {
                         className="flex items-center justify-center gap-2 bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-500/20 dark:hover:bg-indigo-500/30 text-indigo-700 dark:text-indigo-300 font-bold py-3 px-4 rounded-lg transition-colors disabled:opacity-50 border border-indigo-200 dark:border-indigo-500/30"
                     >
                         {isAiLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-                        <span className="hidden sm:inline">Auto-Evaluar</span>
+                        <span className="hidden sm:inline">{t('decision.matrix.autoEvaluate')}</span>
                     </button>
 
                     <button
@@ -210,32 +205,31 @@ export const EvaluationMatrix = () => {
                         disabled={isLoading || isAiLoading}
                         className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors shadow-lg shadow-emerald-200 dark:shadow-none"
                     >
-                        {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Calcular Mejor Decisión'}
+                        {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : t('decision.matrix.calculate')}
                         <ArrowRight className="w-5 h-5 hidden sm:inline" />
                     </button>
 
                     <button
                         onClick={() => navigate(`/collab/${currentDecision.id}`)}
                         className="flex items-center justify-center gap-2 bg-purple-100 hover:bg-purple-200 text-purple-700 dark:bg-purple-500/20 dark:text-purple-300 font-bold py-3 px-4 rounded-lg transition-colors"
-                        title="Ir a Sala Colaborativa"
+                        title={t('decision.matrix.collab')}
                     >
                         <Users className="w-5 h-5" />
                     </button>
                 </div>
             </div>
 
-            {/* 🛡️ EL PANEL DE RIESGOS DESPLEGABLE */}
             {showRisksPanel && (
                 <div className="mb-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 p-6 rounded-2xl animate-in slide-in-from-top-4 duration-300 shadow-sm">
                     <h3 className="text-amber-800 dark:text-amber-400 font-bold mb-4 flex items-center gap-2">
                         <AlertTriangle className="w-5 h-5" />
-                        Consideraciones Previas (Puntos Ciegos)
+                        {t('decision.matrix.risksTitle')}
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {earlyRisks.map((riskItem, idx) => (
                             <div key={idx} className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-amber-100 dark:border-amber-800/50">
                                 <span className="text-xs font-black uppercase text-amber-600 dark:text-amber-500 block mb-1">
-                                    Opción: {riskItem.opcion}
+                                    {t('decision.matrix.riskOption')} {riskItem.opcion}
                                 </span>
                                 <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">
                                     "{riskItem.riesgo}"
@@ -249,18 +243,17 @@ export const EvaluationMatrix = () => {
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden transition-colors">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
-                        {/* ... (Tu tabla intacta) ... */}
                         <thead>
                             <tr className="bg-slate-50 dark:bg-slate-800/80 border-b border-gray-200 dark:border-slate-700">
                                 <th className="p-4 font-semibold text-slate-700 dark:text-slate-300 border-r border-gray-200 dark:border-slate-700 w-1/4">
-                                    Opciones \ Criterios
+                                    {t('decision.matrix.optionsVsCriteria')}
                                 </th>
                                 {currentDecision.criteria.map((c) => (
                                     <th key={c.id} className="p-4 font-medium text-slate-600 dark:text-slate-300 text-center border-r border-gray-200 dark:border-slate-700 min-w-[150px]">
                                         <div className="flex flex-col items-center">
                                             <span>{c.name}</span>
                                             <span className="text-xs text-slate-400 dark:text-slate-500 font-normal mt-1">
-                                                Peso: {c.weight * 10}/10 | {c.isPositive ? '📈' : '📉'}
+                                                {t('decision.matrix.weight')}: {c.weight * 10}/10 | {c.isPositive ? '📈' : '📉'}
                                             </span>
                                         </div>
                                     </th>

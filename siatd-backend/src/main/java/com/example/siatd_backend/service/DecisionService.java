@@ -97,7 +97,4 @@ public class DecisionService {
         }
     }
 
-    public DecisionRepository getDecisionRepository() {
-        return decisionRepository;
-    }
 }

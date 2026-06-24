@@ -25,7 +25,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/decisions")
-@CrossOrigin(origins = "http://localhost:5173")
+
 public class DecisionController {
 
     private final DecisionService decisionService;
